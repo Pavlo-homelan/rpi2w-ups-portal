@@ -81,10 +81,10 @@ class WifiManager:
         return cls(
             backend=config.get("WIFI_BACKEND", "mock"),
             interface=config.get("WIFI_INTERFACE", "wlan0"),
-            hotspot_connection_name=config.get("HOTSPOT_CONNECTION_NAME", "rpi2w-hotspot"),
-            hotspot_ssid=config.get("HOTSPOT_SSID", "rpi2w-setup"),
+            hotspot_connection_name=config.get("HOTSPOT_CONNECTION_NAME", "ups-pi-node-hotspot"),
+            hotspot_ssid=config.get("HOTSPOT_SSID", "ups-pi-node-setup"),
             hotspot_address=config.get("HOTSPOT_ADDRESS", "10.42.0.1"),
-            helper_socket=config.get("SYSTEM_HELPER_SOCKET", "/run/rpi2w-portal/helper.sock"),
+            helper_socket=config.get("SYSTEM_HELPER_SOCKET", "/run/ups-pi-node/helper.sock"),
             portal_mode=config.get("PORTAL_MODE", "auto"),
         )
 
@@ -156,7 +156,7 @@ class WifiManager:
         ]
         return WifiScanResult(
             True,
-            "Сканирование завершено. Это mock-данные для интерфейса rpi2w.",
+            "Wi-Fi scan completed with mock data for the ups-pi-node interface.",
             networks,
         )
 
@@ -166,7 +166,7 @@ class WifiManager:
         self._mock_connected_ssid = ssid
         return WifiActionResult(
             True,
-            f"Mock-подключение к сети '{ssid}' выполнено. На устройстве тут будет вызов backend-команды.",
+            f"Mock connection to network '{ssid}' completed. On the device this calls the backend command.",
         )
 
     def _get_helper_status(self):
@@ -201,14 +201,14 @@ class WifiManager:
 
         networks = [
             WifiNetwork(
-                ssid=item.get("ssid", "Скрытая сеть"),
+                ssid=item.get("ssid", "Hidden network"),
                 signal=int(item.get("signal", 0)),
                 security=item.get("security") or "Open",
                 connected=bool(item.get("connected")),
             )
             for item in data.get("networks", [])
         ]
-        return WifiScanResult(True, "Сканирование Wi-Fi выполнено через system helper.", networks)
+        return WifiScanResult(True, "Wi-Fi scan completed through system helper.", networks)
 
     def _connect_helper(self, ssid, password="", hidden=False):
         data = self._helper().request(
@@ -220,7 +220,7 @@ class WifiManager:
                 "hidden": hidden,
             },
         )
-        return WifiActionResult(True, data.get("message") or f"Команда подключения к сети '{ssid}' выполнена.")
+        return WifiActionResult(True, data.get("message") or f"Connection command for network '{ssid}' completed.")
 
     def _helper(self):
         return SystemHelperClient(self.helper_socket)

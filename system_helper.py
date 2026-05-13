@@ -261,8 +261,8 @@ def configure_socket(path, group_name):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="rpi2w portal system helper")
-    parser.add_argument("--socket", default="/run/rpi2w-portal/helper.sock")
+    parser = argparse.ArgumentParser(description="ups-pi-node system helper")
+    parser.add_argument("--socket", default="/run/ups-pi-node/helper.sock")
     parser.add_argument("--socket-group", default="www-data")
     args = parser.parse_args()
 

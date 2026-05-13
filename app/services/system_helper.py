@@ -25,17 +25,17 @@ class SystemHelperClient:
                 client.shutdown(socket.SHUT_WR)
                 response = self._read_response(client)
         except FileNotFoundError as exc:
-            raise SystemHelperError(f"System helper socket не найден: {self.socket_path}") from exc
+            raise SystemHelperError(f"System helper socket not found: {self.socket_path}") from exc
         except OSError as exc:
-            raise SystemHelperError(f"System helper недоступен: {exc}") from exc
+            raise SystemHelperError(f"System helper is unavailable: {exc}") from exc
 
         try:
             result = json.loads(response.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise SystemHelperError("System helper вернул некорректный ответ.") from exc
+            raise SystemHelperError("System helper returned an invalid response.") from exc
 
         if not result.get("success"):
-            raise SystemHelperError(result.get("error") or "System helper вернул ошибку.")
+            raise SystemHelperError(result.get("error") or "System helper returned an error.")
 
         return result.get("data")
 

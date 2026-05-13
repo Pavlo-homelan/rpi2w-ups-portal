@@ -2,40 +2,64 @@ from functools import wraps
 
 from flask import (
     Blueprint,
+    abort,
     current_app,
     flash,
     redirect,
     render_template,
     request,
     session,
+    send_file,
+    send_from_directory,
     url_for,
 )
+
+from .i18n import SUPPORTED_LANGUAGES, normalize_language, translate
+from .services.widgets import WidgetUploadError
 
 
 main = Blueprint("main", __name__)
 
 
 def get_auth_service():
-    return current_app.extensions["rpi2w_auth"]
+    return current_app.extensions["ups_pi_node_auth"]
 
 
 def get_ups_manager():
-    return current_app.extensions["rpi2w_ups"]
+    return current_app.extensions["ups_pi_node_ups"]
 
 
 def get_wifi_manager():
-    return current_app.extensions["rpi2w_wifi"]
+    return current_app.extensions["ups_pi_node_wifi"]
 
 
 def get_config_manager():
-    return current_app.extensions["rpi2w_config"]
+    return current_app.extensions["ups_pi_node_config"]
+
+
+def get_widget_manager():
+    return current_app.extensions["ups_pi_node_widgets"]
+
+
+def current_language():
+    return normalize_language(
+        session.get("language") or get_config_manager().ui_language
+    )
+
+
+def tr(key, **params):
+    return translate(current_language(), key, **params)
+
+
+def flash_t(key, category="info", **params):
+    flash(tr(key, **params), category)
 
 
 def login_required(view):
     @wraps(view)
     def wrapped_view(*args, **kwargs):
         if not session.get("authenticated"):
-            flash("Сначала выполните вход в портал управления rpi2w.", "error")
+            flash_t("flash.login_required", "error")
             return redirect(url_for("main.login"))
         return view(*args, **kwargs)
 
@@ -60,8 +84,118 @@ def build_portal_context(scan_networks=True):
 def render_login_page(form_data=None):
     return render_template(
         "login.html",
-        form_data=form_data or {"username": "", "node_name": "rpi2w-core-01"},
+        form_data=form_data or {"username": "", "node_name": "ups-pi-node-01"},
     )
+
+
+def get_cpu_temp_label():
+    value = get_cpu_temp_value()
+    if value is None:
+        return "--"
+    return f"{value:.1f} C"
+
+
+def get_cpu_temp_value():
+    temp_path = "/sys/class/thermal/thermal_zone0/temp"
+    try:
+        with open(temp_path, "r", encoding="utf-8") as temp_file:
+            return int(temp_file.read().strip()) / 1000
+    except (OSError, ValueError):
+        return None
+
+
+def get_ram_label():
+    stats = get_ram_stats()
+    if not stats:
+        return "--"
+
+    return f"{stats['used_mb']:.0f} MB ({stats['percent']:.0f}%)"
+
+
+def get_ram_stats():
+    meminfo = {}
+    try:
+        with open("/proc/meminfo", "r", encoding="utf-8") as meminfo_file:
+            for line in meminfo_file:
+                key, value = line.split(":", 1)
+                meminfo[key] = int(value.strip().split()[0])
+    except (OSError, ValueError, IndexError):
+        return None
+
+    total = meminfo.get("MemTotal")
+    available = meminfo.get("MemAvailable")
+    if not total or available is None:
+        return None
+
+    used = max(0, total - available)
+    return {
+        "used_mb": round(used / 1024, 1),
+        "percent": round((used / total) * 100, 1),
+    }
+
+
+def build_card_status_payload(ups_snapshot=None):
+    snapshot = ups_snapshot or get_ups_manager().get_snapshot()
+    current_abs = abs(snapshot.current_ma)
+
+    if not snapshot.mains_present:
+        state = "DISCHARGE"
+        color = "var(--red)"
+    elif snapshot.battery_status == "Full" and current_abs < 150:
+        state = "CHARGED"
+        color = "var(--green)"
+    elif snapshot.battery_direction == "Charging":
+        state = "CHARGE"
+        color = "var(--yellow)"
+    else:
+        state = "IDLE"
+        color = "var(--muted)"
+
+    cpu_temp = get_cpu_temp_value()
+    ram_stats = get_ram_stats() or {"used_mb": 0.0, "percent": 0.0}
+
+    return {
+        "v": snapshot.bus_voltage,
+        "i": current_abs,
+        "state": state,
+        "color": color,
+        "ac": snapshot.mains_present,
+        "percent": snapshot.battery_percent,
+        "cpu": cpu_temp or 0.0,
+        "cpu_temp": cpu_temp or 0.0,
+        "ram_used": ram_stats["used_mb"],
+        "ram_percent": ram_stats["percent"],
+    }
+
+
+def build_live_status_payload():
+    ups_snapshot = get_ups_manager().get_snapshot()
+    portal_status = get_wifi_manager().get_status()
+
+    payload = {
+        "status": "ok",
+        "portal_mode": portal_status.portal_mode,
+        "portal_mode_label": portal_status.portal_mode_label,
+        "wifi_backend": portal_status.backend,
+        "interface": portal_status.interface,
+        "mains_present": ups_snapshot.mains_present,
+        "mains_label": ups_snapshot.mains_label,
+        "ups_mode": ups_snapshot.mode_label,
+        "load_source": ups_snapshot.load_source,
+        "battery_route": ups_snapshot.battery_route,
+        "battery_percent": ups_snapshot.battery_percent,
+        "battery_percent_label": ups_snapshot.battery_percent_label,
+        "battery_status": ups_snapshot.battery_status,
+        "battery_direction": ups_snapshot.battery_direction,
+        "battery_summary": ups_snapshot.battery_summary,
+        "voltage_label": ups_snapshot.voltage_label,
+        "current_label": ups_snapshot.current_label,
+        "power_label": ups_snapshot.power_label,
+        "cpu_temp_label": get_cpu_temp_label(),
+        "ram_label": get_ram_label(),
+    }
+    payload.update(build_card_status_payload(ups_snapshot))
+    return payload
 
 
 @main.get("/")
@@ -77,33 +211,39 @@ def login():
         return redirect(url_for("main.dashboard"))
 
     auth_service = get_auth_service()
-    form_data = {"username": "", "node_name": "rpi2w-core-01"}
+    form_data = {"username": "", "node_name": "ups-pi-node-01"}
 
     if request.method == "POST":
-        form_data["username"] = request.form.get("username", "").strip()
-        form_data["node_name"] = request.form.get("node_name", "").strip() or "rpi2w-core-01"
-        password = request.form.get("password", "")
+        form_data["username"] = (
+            request.form.get("username") or request.form.get("u") or ""
+        ).strip()
+        form_data["node_name"] = request.form.get("node_name", "").strip() or "ups-pi-node-01"
+        password = request.form.get("password") or request.form.get("p") or ""
 
         if not form_data["username"] or not password:
-            flash("Укажите системный логин и пароль пользователя rpi2w.", "error")
+            flash_t("flash.login_missing", "error")
         else:
             result = auth_service.authenticate(form_data["username"], password)
             if result.success:
+                language = current_language()
                 session.clear()
+                session["language"] = language
                 session["authenticated"] = True
                 session["username"] = form_data["username"]
                 session["node_name"] = form_data["node_name"]
-                flash(result.message, "success")
+                flash_t(result.message_key, "success", **result.message_params)
                 return redirect(url_for("main.dashboard"))
-            flash(result.message, "error")
+            flash_t(result.message_key, "error", **result.message_params)
 
     return render_login_page(form_data)
 
 
-@main.post("/logout")
+@main.route("/logout", methods=["GET", "POST"])
 def logout():
+    language = current_language()
     session.clear()
-    flash("Сессия rpi2w завершена.", "info")
+    session["language"] = language
+    flash_t("flash.logout", "info")
     return redirect(url_for("main.login"))
 
 
@@ -118,7 +258,15 @@ def wifi_dashboard():
 @login_required
 def dashboard():
     context = build_portal_context(scan_networks=False)
+    context["data"] = build_card_status_payload(context["ups_snapshot"])
+    context["user"] = context["current_user"]
     return render_template("index.html", **context)
+
+
+@main.get("/api/data")
+@login_required
+def api_data():
+    return build_live_status_payload(), 200
 
 
 @main.post("/wifi/connect")
@@ -129,12 +277,77 @@ def connect_wifi():
     hidden = request.form.get("hidden") == "1"
 
     if not ssid:
-        flash("Укажите SSID сети, к которой нужно подключиться.", "error")
+        flash_t("flash.wifi_missing_ssid", "error")
         return redirect(url_for("main.wifi_dashboard"))
 
     result = get_wifi_manager().connect(ssid=ssid, password=password, hidden=hidden)
-    flash(result.message, "success" if result.success else "error")
+    if result.success:
+        flash_t("wifi.connect_success", "success", ssid=ssid)
+    else:
+        flash(result.message, "error")
     return redirect(url_for("main.wifi_dashboard"))
+
+
+@main.get("/widgets/<style_id>/<path:filename>")
+def widget_file(style_id, filename):
+    widget_manager = get_widget_manager()
+    asset_path = widget_manager.file_path_for(style_id, filename)
+    if asset_path is None:
+        abort(404)
+    mimetype = widget_manager.mimetype_for(asset_path)
+    return send_file(asset_path, mimetype=mimetype)
+
+
+@main.get("/widgets/<path:filename>")
+def widget_css(filename):
+    widget_manager = get_widget_manager()
+    css_path = widget_manager.css_path_for(filename)
+    if css_path is None:
+        abort(404)
+    return send_from_directory(widget_manager.storage_path, css_path.name, mimetype="text/css")
+
+
+@main.post("/system/widgets")
+@login_required
+def upload_widget():
+    widget_manager = get_widget_manager()
+    try:
+        style = widget_manager.install_package(request.files.get("widget_file"))
+        flash_t("flash.widget_installed", "success", label=style["label"])
+    except WidgetUploadError as exc:
+        flash_t(exc.message_key, "error", **exc.params)
+    return redirect(url_for("main.system"))
+
+
+@main.post("/system/widgets/<style_id>/delete")
+@login_required
+def delete_widget(style_id):
+    widget_manager = get_widget_manager()
+    try:
+        widget_manager.delete_custom(style_id)
+        flash_t("flash.widget_deleted", "success")
+    except WidgetUploadError as exc:
+        flash_t(exc.message_key, "error", **exc.params)
+    return redirect(url_for("main.system"))
+
+
+@main.post("/system/language")
+@login_required
+def update_language():
+    language = request.form.get("language", "").strip()
+    if language not in SUPPORTED_LANGUAGES:
+        flash_t("flash.language_invalid", "error")
+        return redirect(url_for("main.system"))
+
+    config = get_config_manager()
+    session["language"] = language
+    try:
+        config.set("ui", "language", language)
+        config.save()
+        flash_t("flash.language_saved", "success")
+    except OSError as exc:
+        flash_t("flash.settings_error", "error", error=exc)
+    return redirect(url_for("main.system"))
 
 
 @main.route("/system", methods=["GET", "POST"])
@@ -149,9 +362,9 @@ def system():
             config.set("load", "timeout_1", t1)
             config.set("load", "timeout_2", t2)
             config.save()
-            flash("Настройки сохранены.", "success")
+            flash_t("flash.settings_saved", "success")
         except (ValueError, OSError) as exc:
-            flash(f"Ошибка сохранения настроек: {exc}", "error")
+            flash_t("flash.settings_error", "error", error=exc)
         return redirect(url_for("main.system"))
 
     context = {
@@ -160,6 +373,7 @@ def system():
         "portal_status": get_wifi_manager().get_status(),
         "timeout_1": config.load_timeout_1,
         "timeout_2": config.load_timeout_2,
+        "ui_language": config.ui_language,
     }
     return render_template("system.html", **context)
 
@@ -167,16 +381,4 @@ def system():
 @main.get("/health")
 @login_required
 def health():
-    ups_snapshot = get_ups_manager().get_snapshot()
-    portal_status = get_wifi_manager().get_status()
-    return {
-        "status": "ok",
-        "portal_mode": portal_status.portal_mode,
-        "wifi_backend": portal_status.backend,
-        "interface": portal_status.interface,
-        "mains_present": ups_snapshot.mains_present,
-        "ups_mode": ups_snapshot.mode_label,
-        "load_source": ups_snapshot.load_source,
-        "battery_percent": ups_snapshot.battery_percent,
-        "battery_status": ups_snapshot.battery_status,
-    }, 200
+    return build_live_status_payload(), 200

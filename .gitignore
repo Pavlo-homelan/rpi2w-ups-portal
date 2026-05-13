@@ -3,7 +3,25 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .venv/
+.venv-*/
 venv/
+/env/
 instance/
 .env
 
+# Local preview/runtime artifacts
+.preview-*.log
+.preview-*.pid
+.tmp_preview_server.py
+*.log
+*.pid
+
+# Build/package outputs
+build/
+dist/
+*.deb
+*.buildinfo
+*.changes
+
+# Imported SD-card/reference dumps
+incoming-rpi-ups-version/

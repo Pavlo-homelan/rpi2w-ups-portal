@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-WIFI_IFACE="${RPI2W_WIFI_INTERFACE:-wlan0}"
-HOTSPOT_CONNECTION="${RPI2W_HOTSPOT_CONNECTION_NAME:-rpi2w-hotspot}"
-HOTSPOT_SSID="${RPI2W_HOTSPOT_SSID:-rpi2w-setup}"
-HOTSPOT_PASSWORD="${RPI2W_HOTSPOT_PASSWORD:-rpi2w-setup-pass}"
+WIFI_IFACE="${UPS_PI_NODE_WIFI_INTERFACE:-wlan0}"
+HOTSPOT_CONNECTION="${UPS_PI_NODE_HOTSPOT_CONNECTION_NAME:-ups-pi-node-hotspot}"
+HOTSPOT_SSID="${UPS_PI_NODE_HOTSPOT_SSID:-ups-pi-node-setup}"
+HOTSPOT_PASSWORD="${UPS_PI_NODE_HOTSPOT_PASSWORD:-ups-pi-node-setup-pass}"
 
 if ! command -v nmcli >/dev/null 2>&1; then
     echo "nmcli is required for fallback hotspot management" >&2

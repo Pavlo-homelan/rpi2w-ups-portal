@@ -1,0 +1,9 @@
+[Unit]
+Description=ups-pi-node fallback hotspot check
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/default/ups-pi-node
+ExecStart=/usr/bin/ups-pi-node-hotspot-fallback

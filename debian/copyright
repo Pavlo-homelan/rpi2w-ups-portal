@@ -1,0 +1,14 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: ups-pi-node
+Source: local
+
+Files: *
+Copyright: 2026 Pavlo
+License: GPL-3+
+
+License: GPL-3+
+ This package is distributed under the terms of the GNU General Public
+ License version 3 or later.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ version 3 can be found in /usr/share/common-licenses/GPL-3.

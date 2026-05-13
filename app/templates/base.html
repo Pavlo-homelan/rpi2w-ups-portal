@@ -1,47 +1,61 @@
-<!doctype html>
-<html lang="ru">
+<!DOCTYPE html>
+<html lang="{{ current_language|default('uk') }}">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}rpi2w portal{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}ups-pi-node{% endblock %}</title>
+    <script>
+        try {
+            document.documentElement.dataset.theme = localStorage.getItem("ups-pi-node-theme") || "dark";
+            document.documentElement.dataset.widgetStyle = localStorage.getItem("ups-pi-node-widget-style") || "neon";
+        } catch (error) {
+            document.documentElement.dataset.theme = "dark";
+            document.documentElement.dataset.widgetStyle = "neon";
+        }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; margin: 0; }
+        .auth-page { display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .app-page { display: flex; flex-direction: column; align-items: center; padding: 0; box-sizing: border-box; }
+        .container { width: 100%; display: flex; flex: 1 0 auto; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .auth-page .container { flex: initial; padding: 0; }
+        .page-header, .page-footer { width: 100%; flex: 0 0 auto; box-sizing: border-box; }
+        .page-header { position: relative; display: flex; justify-content: center; padding: 14px 20px 10px; border-bottom: 1px solid var(--page-line); }
+        .page-header-inner { width: 440px; max-width: calc(100vw - 40px); display: grid; gap: 10px; }
+        .page-brand { display: flex; justify-content: flex-start; align-items: baseline; gap: 8px; color: var(--text); text-decoration: none; }
+        .page-brand-main { font-weight: bold; }
+        .page-brand-sub { color: var(--muted); font-size: 0.85em; }
+        .header-actions { position: absolute; top: 14px; right: 20px; display: flex; align-items: center; gap: 10px; font-size: 0.85em; }
+        .header-user { color: var(--muted); }
+        .header-logout { width: auto; padding: 6px 10px; background: transparent; border: 1px solid var(--danger-border); color: var(--red); font-size: 1em; }
+        .page-footer { padding: 10px 20px 14px; border-top: 1px solid var(--page-line); color: var(--muted-soft); font-size: 0.8em; text-align: center; }
+        .card { max-width: 440px; margin: 0 auto; background: var(--card); padding: 24px; border-radius: 10px; box-shadow: var(--shadow); }
+        .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; margin: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--tab-bg); }
+        .tab-link { display: block; padding: 8px 6px; border-radius: 5px; color: var(--muted); text-decoration: none; font-size: 0.85em; font-weight: bold; text-align: center; }
+        .tab-link.active { background: var(--green); color: white; }
+        .battery-container { background: var(--track); border-radius: 5px; overflow: hidden; margin: 15px 0; height: 25px; border: 1px solid var(--border); }
+        .battery-bar { height: 100%; transition: width 0.5s ease, background 0.5s ease; }
+        .val { font-size: 2em; font-weight: bold; text-align: center; margin: 10px 0; }
+        .CHARGE { color: var(--green); }
+        .DISCHARGE { color: var(--red); }
+        .CHARGED { color: var(--green); }
+        @media (max-width: 720px) {
+            .page-header { display: grid; gap: 10px; }
+            .header-actions { position: static; justify-content: center; }
+        }
+    </style>
 </head>
-<body class="{% block body_class %}{% endblock %}">
-    <header class="site-header">
-        <div class="container">
-            <a class="brand" href="{{ url_for('main.index') }}">
-                <span class="brand-mark">rpi2w</span>
-                <span class="brand-copy">wireless recovery portal</span>
-            </a>
-
-            <nav>
-                {% if session.get("authenticated") %}
-                    <a href="{{ url_for('main.dashboard') }}">Главная</a>
-                    <a href="{{ url_for('main.wifi_dashboard') }}">Wi-Fi</a>
-                    <a href="{{ url_for('main.health') }}">Health</a>
-                    <span class="nav-user">{{ session.get("username") }}</span>
-                    <form method="post" action="{{ url_for('main.logout') }}" class="inline-form">
-                        <button class="nav-button" type="submit">Выход</button>
-                    </form>
-                {% else %}
-                    <a href="{{ url_for('main.login') }}">Вход</a>
-                {% endif %}
-            </nav>
-        </div>
-    </header>
-
-    <main class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <section class="flash-stack" aria-label="Системные уведомления">
-                    {% for category, message in messages %}
-                        <article class="flash flash-{{ category }}">{{ message }}</article>
-                    {% endfor %}
-                </section>
-            {% endif %}
-        {% endwith %}
-
+<body class="{% block body_class %}auth-page{% endblock %}">
+    {% block page_header %}{% endblock %}
+    <div class="container">
         {% block content %}{% endblock %}
-    </main>
+    </div>
+    {% block page_footer %}{% endblock %}
+    <script type="application/json" id="widget-style-options">{{ widget_style_options|tojson }}</script>
+    <script type="application/json" id="i18n-messages">{{ client_i18n|tojson }}</script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

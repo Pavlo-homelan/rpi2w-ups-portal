@@ -1,0 +1,74 @@
+<div class="card ups-widget">
+    <div class="widget-head">
+        <div>
+            <span class="widget-label">{{ t("ups.power") }}</span>
+            <h2 id="status-title" class="{{ data.state }}" data-live="state">{{ t("ups.state." ~ data.state) }}</h2>
+        </div>
+        <div class="status-chip">
+            <span id="ac-status" data-live="ac" style="color: {{ 'var(--green)' if data.ac else 'var(--red)' }}">{{ t("ups.ac_ok") if data.ac else t("ups.ac_lost") }}</span>
+        </div>
+    </div>
+
+    <div class="widget-body">
+        <div class="widget-visual">
+            <div id="battery-gauge" class="battery-gauge" style="--battery-level: {{ data.percent }}%; --battery-color: {{ data.color }};">
+                <div class="battery-gauge-core">
+                    <strong id="battery-percent-widget" data-live="percent">{{ data.percent }}%</strong>
+                    <span>{{ t("ups.battery") }}</span>
+                </div>
+            </div>
+
+            <div class="battery-can" style="--battery-level: {{ data.percent }}%; --battery-color: {{ data.color }};">
+                <div class="battery-cap"></div>
+                <div class="battery-can-fill"></div>
+                <strong data-live="percent">{{ data.percent }}%</strong>
+            </div>
+        </div>
+
+        <div class="widget-metrics">
+            <div class="widget-metric">
+                <span>{{ t("ups.voltage") }}</span>
+                <strong id="val-v" data-live="voltage">{{ "%.2f"|format(data.v) }}V</strong>
+            </div>
+            <div class="widget-metric">
+                <span>{{ t("ups.current") }}</span>
+                <strong id="val-i" data-live="current">{{ "%.0f"|format(data.i) }}mA</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="oled-readout">
+        <div class="oled-line">
+            <span>{{ t("ups.power")|upper }}</span>
+            <b data-live="state">{{ t("ups.state." ~ data.state) }}</b>
+        </div>
+        <strong class="oled-percent" data-live="percent">{{ data.percent }}%</strong>
+        <div class="oled-segments" style="--battery-level: {{ data.percent }}%; --battery-color: {{ data.color }}"></div>
+        <div class="oled-row"><span>{{ t("ups.voltage")|upper }}</span><b data-live="voltage">{{ "%.2f"|format(data.v) }}V</b></div>
+        <div class="oled-row"><span>{{ t("ups.current")|upper }}</span><b data-live="current">{{ "%.0f"|format(data.i) }}mA</b></div>
+        <div class="oled-row"><span>CPU</span><b><span data-live="cpu">{{ data.cpu }}</span>&deg;C</b></div>
+        <div class="oled-row"><span>RAM</span><b data-live="ram">{{ t("ups.loading") }}</b></div>
+    </div>
+
+    <div class="radial-hub">
+        <div class="radial-node radial-node-top"><span>{{ t("ups.voltage") }}</span><b data-live="voltage">{{ "%.2f"|format(data.v) }}V</b></div>
+        <div class="radial-node radial-node-right"><span>{{ t("ups.current") }}</span><b data-live="current">{{ "%.0f"|format(data.i) }}mA</b></div>
+        <div class="radial-node radial-node-bottom"><span>RAM</span><b data-live="ram">{{ t("ups.loading") }}</b></div>
+        <div class="radial-node radial-node-left"><span>CPU</span><b><span data-live="cpu">{{ data.cpu }}</span>&deg;C</b></div>
+    </div>
+
+    <div class="battery-container widget-bar">
+        <div id="battery-bar" class="battery-bar" style="width: {{ data.percent }}%; background: {{ data.color }};"></div>
+    </div>
+
+    <div class="widget-foot">
+        <div>
+            <span>CPU</span>
+            <b id="cpu-temp" data-live="cpu">{{ data.cpu }}</b><span>&deg;C</span>
+        </div>
+        <div>
+            <span>RAM</span>
+            <b id="ram-info" data-live="ram">{{ t("ups.loading") }}</b>
+        </div>
+    </div>
+</div>

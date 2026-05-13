@@ -1,22 +1,29 @@
 #!/bin/bash
 set -e
 
-APP_DIR="/srv/rpi2w-ups-portal"
-CONF_DIR="/etc/rpi2w-portal"
-ENV_FILE="/etc/default/rpi2w-portal"
-VENV_DIR="$APP_DIR/.venv"
+APP_DIR="/usr/lib/ups-pi-node"
+VAR_DIR="/var/lib/ups-pi-node"
+CONF_DIR="/etc/ups-pi-node"
+ENV_FILE="/etc/default/ups-pi-node"
+VENV_DIR="$VAR_DIR/.venv"
+WIDGETS_DIR="$VAR_DIR/widgets"
 
 case "$1" in
     configure)
-        # Создать директорию конфига
+        # Создать директории конфига и runtime-данных
         mkdir -p "$CONF_DIR"
+        mkdir -p "$WIDGETS_DIR"
 
         # Создать environment-файл с уникальным Flask secret key
         if [ ! -f "$ENV_FILE" ]; then
             secret_key="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
             old_umask="$(umask)"
             umask 077
-            printf 'SECRET_KEY=%s\n' "$secret_key" > "$ENV_FILE"
+            {
+                printf 'UPS_PI_NODE_SECRET_KEY=%s\n' "$secret_key"
+                printf 'UPS_PI_NODE_CONFIG_FILE=%s/main.conf\n' "$CONF_DIR"
+                printf 'UPS_PI_NODE_WIDGETS_DIR=%s\n' "$WIDGETS_DIR"
+            } > "$ENV_FILE"
             umask "$old_umask"
             chown root:www-data "$ENV_FILE"
             chmod 640 "$ENV_FILE"
@@ -43,28 +50,32 @@ case "$1" in
         "$VENV_DIR/bin/pip" install --quiet -r "$APP_DIR/requirements.txt"
 
         # Права доступа
-        chown -R www-data:www-data "$APP_DIR"
+        chown -R root:root "$APP_DIR"
+        find "$APP_DIR" -type d -exec chmod 755 {} +
+        find "$APP_DIR" -type f -exec chmod 644 {} +
+        chown -R www-data:www-data "$VAR_DIR"
+        chmod 750 "$VAR_DIR" "$WIDGETS_DIR"
         chown root:www-data "$CONF_DIR/main.conf"
         chmod 660 "$CONF_DIR/main.conf"
 
         # Скрипт hotspot
-        chmod +x /usr/local/bin/rpi2w-hotspot-fallback.sh
+        chmod +x /usr/bin/ups-pi-node-hotspot-fallback
 
         # Nginx: включить сайт
         if [ -f /etc/nginx/sites-enabled/default ]; then
             rm -f /etc/nginx/sites-enabled/default
         fi
-        ln -sf /etc/nginx/sites-available/rpi2w-ups-portal \
-               /etc/nginx/sites-enabled/rpi2w-ups-portal
+        ln -sf /etc/nginx/sites-available/ups-pi-node \
+               /etc/nginx/sites-enabled/ups-pi-node
 
         # Systemd
         systemctl daemon-reload
-        systemctl enable rpi2w-system-helper.service
-        systemctl enable flask_site.service
-        systemctl enable rpi2w-hotspot-fallback.timer
-        systemctl restart rpi2w-system-helper.service
-        systemctl restart flask_site.service
-        systemctl restart rpi2w-hotspot-fallback.timer
+        systemctl enable ups-pi-node-helper.service
+        systemctl enable ups-pi-node.service
+        systemctl enable ups-pi-node-hotspot-fallback.timer
+        systemctl restart ups-pi-node-helper.service
+        systemctl restart ups-pi-node.service
+        systemctl restart ups-pi-node-hotspot-fallback.timer
         systemctl reload nginx || true
         ;;
 esac

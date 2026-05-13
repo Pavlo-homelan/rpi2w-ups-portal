@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodic ups-pi-node fallback hotspot check
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=30s
+Unit=ups-pi-node-hotspot-fallback.service
+
+[Install]
+WantedBy=timers.target

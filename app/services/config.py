@@ -1,20 +1,22 @@
 import configparser
 import os
 
-DEFAULT_CONFIG_PATH = "/etc/rpi2w-portal/main.conf"
+from ..i18n import DEFAULT_LANGUAGE, normalize_language
+
+DEFAULT_CONFIG_PATH = "/etc/ups-pi-node/main.conf"
 
 
 class ConfigManager:
     def __init__(self, config_path=None):
         self.config_path = config_path or os.getenv(
-            "RPI2W_CONFIG_FILE", DEFAULT_CONFIG_PATH
+            "UPS_PI_NODE_CONFIG_FILE", DEFAULT_CONFIG_PATH
         )
         self._parser = configparser.ConfigParser()
         self.load()
 
     @classmethod
     def from_config(cls, config):
-        return cls(config_path=config.get("RPI2W_CONFIG_FILE"))
+        return cls(config_path=config.get("UPS_PI_NODE_CONFIG_FILE"))
 
     def load(self):
         if os.path.exists(self.config_path):
@@ -49,11 +51,17 @@ class ConfigManager:
     def load_timeout_2(self):
         return self.getint("load", "timeout_2", fallback=300)
 
+    # --- ui ---
+
+    @property
+    def ui_language(self):
+        return normalize_language(self.get("ui", "language", fallback=DEFAULT_LANGUAGE))
+
     # --- system helper ---
 
     @property
     def system_helper_socket(self):
-        return self.get("system", "helper_socket", fallback="/run/rpi2w-portal/helper.sock")
+        return self.get("system", "helper_socket", fallback="/run/ups-pi-node/helper.sock")
 
     # --- gpio ---
 
@@ -93,11 +101,11 @@ class ConfigManager:
 
     @property
     def wifi_hotspot_connection(self):
-        return self.get("wifi", "hotspot_connection", fallback="rpi2w-hotspot")
+        return self.get("wifi", "hotspot_connection", fallback="ups-pi-node-hotspot")
 
     @property
     def wifi_hotspot_ssid(self):
-        return self.get("wifi", "hotspot_ssid", fallback="rpi2w-setup")
+        return self.get("wifi", "hotspot_ssid", fallback="ups-pi-node-setup")
 
     @property
     def wifi_hotspot_address(self):

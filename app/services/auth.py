@@ -1,5 +1,5 @@
 import hmac
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 try:
     import pam  # type: ignore
@@ -10,7 +10,8 @@ except ImportError:  # pragma: no cover - optional runtime dependency
 @dataclass
 class AuthResult:
     success: bool
-    message: str
+    message_key: str
+    message_params: dict = field(default_factory=dict)
 
 
 class SystemAuthService:
@@ -23,8 +24,8 @@ class SystemAuthService:
     def from_config(cls, config):
         return cls(
             mode=config.get("AUTH_MODE", "mock"),
-            portal_username=config.get("PORTAL_USERNAME", "rpi2w-admin"),
-            portal_password=config.get("PORTAL_PASSWORD", "rpi2w-demo"),
+            portal_username=config.get("PORTAL_USERNAME", "ups-pi-admin"),
+            portal_password=config.get("PORTAL_PASSWORD", "ups-pi-demo"),
         )
 
     def metadata(self):
@@ -34,14 +35,14 @@ class SystemAuthService:
             "pam": "PAM system auth",
         }
         descriptions = {
-            "mock": "Для разработки: пропускает любой непустой логин и пароль.",
-            "env": "Сверяет логин и пароль с переменными окружения портала.",
-            "pam": "Проверяет системного пользователя Linux через PAM.",
+            "mock": "Accepts any non-empty login and password for development.",
+            "env": "Checks the login and password against portal environment variables.",
+            "pam": "Checks the Linux system user through PAM.",
         }
         return {
             "mode": self.mode,
             "label": labels.get(self.mode, self.mode),
-            "description": descriptions.get(self.mode, "Режим аутентификации не описан."),
+            "description": descriptions.get(self.mode, "Authentication mode is not described."),
             "production_ready": self.mode in {"env", "pam"},
         }
 
@@ -54,28 +55,22 @@ class SystemAuthService:
 
     def _authenticate_mock(self, username, password):
         if username and password:
-            return AuthResult(
-                True,
-                "Вход выполнен в mock-режиме. Для реального устройства переключите auth на PAM или env.",
-            )
-        return AuthResult(False, "Укажите логин и пароль.")
+            return AuthResult(True, "auth.mock_success")
+        return AuthResult(False, "auth.missing_credentials")
 
     def _authenticate_env(self, username, password):
         valid_username = hmac.compare_digest(username, self.portal_username)
         valid_password = hmac.compare_digest(password, self.portal_password)
         if valid_username and valid_password:
-            return AuthResult(True, "Вход выполнен. Доступ к управлению Wi-Fi открыт.")
-        return AuthResult(False, "Неверные учётные данные портала rpi2w.")
+            return AuthResult(True, "auth.env_success")
+        return AuthResult(False, "auth.env_failure")
 
     def _authenticate_pam(self, username, password):
         if pam is None:
-            return AuthResult(
-                False,
-                "PAM-модуль не установлен. Подключите python-pam или переключите портал на env-auth.",
-            )
+            return AuthResult(False, "auth.pam_missing")
 
         authenticator = pam.pam()
         if authenticator.authenticate(username, password):
-            return AuthResult(True, "Системный пользователь подтверждён через PAM.")
+            return AuthResult(True, "auth.pam_success")
 
-        return AuthResult(False, "PAM отклонил логин или пароль системного пользователя.")
+        return AuthResult(False, "auth.pam_failure")

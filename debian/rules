@@ -11,4 +11,5 @@ override_dh_auto_install:
 
 override_dh_fixperms:
 	dh_fixperms
-	chmod +x debian/rpi2w-ups-portal/usr/local/bin/rpi2w-hotspot-fallback.sh
+	find debian/ups-pi-node/usr/lib/ups-pi-node -type f -exec chmod 0644 {} +
+	chmod +x debian/ups-pi-node/usr/bin/ups-pi-node-hotspot-fallback

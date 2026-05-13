@@ -3,13 +3,13 @@ set -e
 
 case "$1" in
     remove|upgrade)
-        systemctl stop flask_site.service || true
-        systemctl stop rpi2w-system-helper.service || true
-        systemctl stop rpi2w-hotspot-fallback.timer || true
-        systemctl disable flask_site.service || true
-        systemctl disable rpi2w-system-helper.service || true
-        systemctl disable rpi2w-hotspot-fallback.timer || true
-        rm -f /etc/nginx/sites-enabled/rpi2w-ups-portal
+        systemctl stop ups-pi-node.service || true
+        systemctl stop ups-pi-node-helper.service || true
+        systemctl stop ups-pi-node-hotspot-fallback.timer || true
+        systemctl disable ups-pi-node.service || true
+        systemctl disable ups-pi-node-helper.service || true
+        systemctl disable ups-pi-node-hotspot-fallback.timer || true
+        rm -f /etc/nginx/sites-enabled/ups-pi-node
         systemctl reload nginx || true
         ;;
 esac

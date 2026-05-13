@@ -1,19 +1,23 @@
-# /etc/rpi2w-portal/main.conf
-# Конфигурация портала управления rpi2w-ups
-# Скопируйте этот файл в /etc/rpi2w-portal/main.conf и отредактируйте под своё железо.
+# /etc/ups-pi-node/main.conf
+# ups-pi-node power node configuration
+# Copy this file to /etc/ups-pi-node/main.conf and adjust it for your hardware.
+
+[ui]
+# Interface language: uk | en
+language = uk
 
 [load]
-# Таймауты временного отключения нагрузки (в секундах)
+# Temporary load disconnect timeouts in seconds
 timeout_1 = 30
 timeout_2 = 300
 
 [system]
-# Unix socket root-helper-а для системных задач
-helper_socket = /run/rpi2w-portal/helper.sock
+# Unix socket for the privileged system helper
+helper_socket = /run/ups-pi-node/helper.sock
 
 [gpio]
-# GPIO пины (BCM-нумерация)
-# Заполняется после ревизии платы
+# GPIO pins in BCM numbering
+# Fill these values after your board revision is confirmed
 ac_detect_pin = 17
 relay_1_pin = 23
 relay_2_pin = 24
@@ -22,22 +26,22 @@ relay_4_pin = 8
 load_enable_pin = 7
 
 [wifi]
-# Бэкенд: mock | helper
+# Backend: mock | helper
 backend = helper
 interface = wlan0
-hotspot_connection = rpi2w-hotspot
-hotspot_ssid = rpi2w-setup
+hotspot_connection = ups-pi-node-hotspot
+hotspot_ssid = ups-pi-node-setup
 hotspot_address = 10.42.0.1
-# Режим портала: auto | ap | client
+# Portal mode: auto | ap | client
 portal_mode = auto
 
 [ups]
-# Бэкенд: mock | ina219
+# Backend: mock | ina219
 backend = ina219
 ac_sensor_pin = AC_DETECT
 battery_empty_voltage = 10.8
 battery_full_voltage = 12.6
 
 [auth]
-# Режим авторизации: mock | env | pam
+# Auth mode: mock | env | pam
 mode = pam

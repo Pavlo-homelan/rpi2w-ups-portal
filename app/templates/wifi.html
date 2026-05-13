@@ -1,209 +1,51 @@
 {% extends "base.html" %}
 
-{% block title %}Управление Wi‑Fi | rpi2w{% endblock %}
+{% block title %}{{ t("wifi.title") }}{% endblock %}
+{% block body_class %}app-page{% endblock %}
 
-{% block body_class %}portal-page{% endblock %}
+{% block page_header %}{% set active_tab = "wifi" %}{% include "_page_header.html" %}{% endblock %}
+{% block page_footer %}{% include "_page_footer.html" %}{% endblock %}
 
 {% block content %}
-<section class="page-hero panel">
-    <div>
-        <p class="eyebrow">rpi2w / ups wireless service console</p>
-        <h1>Управление Wi‑Fi и состоянием UPS</h1>
-        <p class="lead">
-            Здесь оператор одновременно видит состояние питания, батареи и реле,
-            а также может вернуть rpi2w из fallback AP в рабочую Wi‑Fi сеть.
-        </p>
-    </div>
-    <div class="hero-actions">
-        <a class="button secondary" href="{{ url_for('main.wifi_dashboard') }}">Сканировать сети</a>
-    </div>
-</section>
+<div class="card">
+    <h2>{{ t("wifi.title") }}</h2>
 
-<section class="summary-grid">
-    <article class="summary-card panel">
-        <span class="status-label">Режим UPS</span>
-        <strong>{{ ups_snapshot.mode_label }}</strong>
-        <p>{{ ups_snapshot.load_source }}. {{ ups_snapshot.battery_route }}.</p>
-    </article>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}{% for message in messages %}<p class="error">{{ message }}</p>{% endfor %}{% endif %}
+    {% endwith %}
 
-    <article class="summary-card panel">
-        <span class="status-label">220 В</span>
-        <strong>{{ ups_snapshot.mains_label }}</strong>
-        <p>Датчик {{ ups_snapshot.ac_sensor_pin }} определяет наличие внешней сети.</p>
-    </article>
+    <p class="wifi-current">{{ t("wifi.current") }}: <b>{{ portal_status.connected_ssid or t("wifi.none") }}</b></p>
 
-    <article class="summary-card panel">
-        <span class="status-label">INA219</span>
-        <strong>{{ ups_snapshot.voltage_label }}</strong>
-        <p>{{ ups_snapshot.current_label }} / {{ ups_snapshot.power_label }}. {{ ups_snapshot.battery_direction }}.</p>
-    </article>
-
-    <article class="summary-card panel">
-        <span class="status-label">Режим портала</span>
-        <strong>{{ portal_status.portal_mode_label }}</strong>
-        <p>
-            {% if portal_status.portal_mode == "ap" %}
-                Точка доступа активна, сайт доступен через hotspot rpi2w.
-            {% else %}
-                Устройство работает как клиент и может быть переподключено к новой сети.
-            {% endif %}
-        </p>
-    </article>
-
-    <article class="summary-card panel">
-        <span class="status-label">Текущая сеть</span>
-        <strong>{{ portal_status.connected_ssid or "Не подключено" }}</strong>
-        <p>Интерфейс {{ portal_status.interface }}. IP: {{ portal_status.ip_address or "не назначен" }}.</p>
-    </article>
-
-    <article class="summary-card panel">
-        <span class="status-label">Fallback hotspot</span>
-        <strong>{{ portal_status.hotspot_ssid }}</strong>
-        <p>Если клиентская сеть недоступна, портал должен оставаться доступным по {{ portal_status.hotspot_address }}.</p>
-    </article>
-
-    <article class="summary-card panel">
-        <span class="status-label">Оператор</span>
-        <strong>{{ current_user }}</strong>
-        <p>{{ auth_meta.label }}. Узел можно переподключить без выхода из портала.</p>
-    </article>
-</section>
-
-<section class="hardware-layout">
-    <section class="hardware-panel panel">
-        <div class="section-head">
-            <div>
-                <p class="panel-kicker">Power topology</p>
-                <h2>Силовая логика UPS</h2>
-            </div>
-            <p class="section-copy">
-                В портале отражена текущая логика переключения между ИБП, батареей и зарядом.
-            </p>
-        </div>
-
-        <div class="telemetry-grid">
-            <article class="metric-card">
-                <span class="status-label">Источник нагрузки</span>
-                <strong>{{ ups_snapshot.load_source }}</strong>
-                <p>Relay 1 определяет, что сейчас питает нагрузку: ИБП или батарея.</p>
-            </article>
-            <article class="metric-card">
-                <span class="status-label">Маршрут батареи</span>
-                <strong>{{ ups_snapshot.battery_route }}</strong>
-                <p>Relay 2 и Relay 3 должны переключаться синхронно, чтобы батарея не оказалась между режимами.</p>
-            </article>
-            <article class="metric-card">
-                <span class="status-label">Резерв</span>
-                <strong>{{ ups_snapshot.relays[3].position }}</strong>
-                <p>Четвёртый канал пока не задействован и оставлен для будущих сценариев.</p>
-            </article>
-        </div>
-
-        <div class="relay-grid">
-            {% for relay in ups_snapshot.relays %}
-                <article class="relay-card">
-                    <div class="relay-card-head">
-                        <span class="relay-index">K{{ relay.channel }}</span>
-                        <span class="relay-state">{{ relay.position }}</span>
-                    </div>
-                    <h3>{{ relay.name }}</h3>
-                    <p class="relay-role">{{ relay.role }}</p>
-                    <p>{{ relay.detail }}</p>
-                </article>
-            {% endfor %}
-        </div>
-    </section>
-</section>
-
-<section class="wifi-layout">
-    <section class="network-panel panel">
-        <div class="section-head">
-            <div>
-                <p class="panel-kicker">Scan results</p>
-                <h2>Доступные сети</h2>
-            </div>
-            <p class="section-copy">
-                {% if scan_result %}
-                    {{ scan_result.message }}
-                {% endif %}
-            </p>
-        </div>
-
+    <form class="wifi-connect-form" method="post" action="{{ url_for('main.connect_wifi') }}">
         {% if scan_result and scan_result.networks %}
-            <div class="network-list">
+            <div class="network-window" role="radiogroup" aria-label="{{ t('wifi.networks_label') }}">
                 {% for network in scan_result.networks %}
-                    <article class="network-card{% if network.connected %} network-card-active{% endif %}">
-                        <div class="network-copy">
-                            <div class="network-title-row">
-                                <h3>{{ network.ssid }}</h3>
-                                {% if network.connected %}
-                                    <span class="network-badge">Подключено</span>
-                                {% endif %}
-                            </div>
-                            <p>
-                                Сигнал {{ network.signal }}%
-                                <span class="dot-separator">•</span>
-                                {{ network.security_label }}
-                            </p>
-                        </div>
-
-                        <form class="inline-connect-form" method="post" action="{{ url_for('main.connect_wifi') }}">
-                            <input type="hidden" name="ssid" value="{{ network.ssid }}">
-                            <label class="field compact-field">
-                                <span>Пароль сети</span>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    placeholder="{% if network.is_open %}Для open-сети можно оставить пустым{% else %}Введите пароль{% endif %}"
-                                >
-                            </label>
-                            <button class="button primary" type="submit">Подключиться</button>
-                        </form>
-                    </article>
+                    <label class="network-row{% if network.connected %} connected{% endif %}">
+                        <input
+                            type="radio"
+                            name="ssid"
+                            value="{{ network.ssid }}"
+                            {% if network.connected or loop.first %}checked{% endif %}
+                            required
+                        >
+                        <span class="network-main">
+                            <span class="network-name">
+                                {{ network.ssid }}
+                                {% if network.connected %}<span class="network-connected">{{ t("wifi.connected") }}</span>{% endif %}
+                            </span>
+                            <span class="network-security">{{ t("wifi.security_open") if network.is_open else network.security_label }}</span>
+                        </span>
+                        <span class="network-signal">{{ network.signal }}%</span>
+                    </label>
                 {% endfor %}
             </div>
         {% else %}
-            <article class="empty-state">
-                <h3>Сети пока не найдены</h3>
-                <p>Проверьте backend Wi‑Fi или обновите страницу, чтобы выполнить новое сканирование.</p>
-            </article>
-        {% endif %}
-    </section>
-
-    <aside class="manual-panel panel">
-        <div class="section-head">
-            <div>
-                <p class="panel-kicker">Manual connect</p>
-                <h2>Подключение к скрытой сети</h2>
+            <div class="network-window empty">
+                <div class="network-empty">{{ t("wifi.no_networks") }}</div>
             </div>
-            <p class="section-copy">
-                Если SSID не попал в список, его можно ввести вручную и подключить устройство напрямую.
-            </p>
-        </div>
-
-        <form class="manual-connect-form" method="post" action="{{ url_for('main.connect_wifi') }}">
-            <input type="hidden" name="hidden" value="1">
-
-            <label class="field">
-                <span>SSID</span>
-                <input type="text" name="ssid" placeholder="Введите имя сети" required>
-            </label>
-
-            <label class="field">
-                <span>Пароль</span>
-                <input type="password" name="password" placeholder="Введите пароль сети">
-            </label>
-
-            <button class="button primary login-button" type="submit">Подключить скрытую сеть</button>
-        </form>
-
-        <div class="meta-block">
-            <span class="meta-label">Сценарий портала</span>
-            <p>
-                После успешного подключения backend должен перевести rpi2w в клиентский режим,
-                а силовая часть продолжит работать по логике датчика 220 В, INA219 и группы реле.
-            </p>
-        </div>
-    </aside>
-</section>
+        {% endif %}
+        <input type="password" name="password" placeholder="{{ t('wifi.password') }}">
+        <button type="submit" {% if not scan_result or not scan_result.networks %}disabled{% endif %}>{{ t("wifi.connect") }}</button>
+    </form>
+</div>
 {% endblock %}

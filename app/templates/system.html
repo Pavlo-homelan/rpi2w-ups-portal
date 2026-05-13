@@ -1,58 +1,85 @@
 {% extends "base.html" %}
 
-{% block title %}Система — rpi2w{% endblock %}
+{% block title %}{{ t("system.title") }}{% endblock %}
+{% block body_class %}app-page{% endblock %}
+
+{% block page_header %}{% set active_tab = "system" %}{% include "_page_header.html" %}{% endblock %}
+{% block page_footer %}{% include "_page_footer.html" %}{% endblock %}
 
 {% block content %}
-<div class="page-system">
+<div class="card">
+    <h2>{{ t("system.title") }}</h2>
 
-    <section class="card">
-        <h2>Управление нагрузкой</h2>
-        <form method="post" action="{{ url_for('main.system') }}">
-            <div class="form-row">
-                <label for="timeout_1">Таймаут кнопки 1 (сек)</label>
-                <input id="timeout_1" name="timeout_1" type="number" min="1" max="3600"
-                       value="{{ timeout_1 }}">
-            </div>
-            <div class="form-row">
-                <label for="timeout_2">Таймаут кнопки 2 (сек)</label>
-                <input id="timeout_2" name="timeout_2" type="number" min="1" max="3600"
-                       value="{{ timeout_2 }}">
-            </div>
-            <button type="submit" class="btn btn-primary">Сохранить</button>
-        </form>
-    </section>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}{% for message in messages %}<p class="error">{{ message }}</p>{% endfor %}{% endif %}
+    {% endwith %}
 
-    <section class="card">
-        <h2>Подключение</h2>
-        <dl>
-            <dt>Режим авторизации</dt>
-            <dd>{{ auth_meta.label }}</dd>
-            <dt>Описание</dt>
-            <dd>{{ auth_meta.description }}</dd>
-            <dt>Бэкенд Wi-Fi</dt>
-            <dd>{{ portal_status.backend }}</dd>
-            <dt>Интерфейс</dt>
-            <dd>{{ portal_status.interface }}</dd>
-        </dl>
-    </section>
+    <div class="system-section-title">{{ t("system.theme") }}</div>
+    <div class="theme-switch" aria-label="{{ t('system.theme') }}">
+        <label class="theme-option">
+            <input type="radio" name="theme" value="dark" data-theme-option>
+            <span>{{ t("system.theme.dark") }}</span>
+        </label>
+        <label class="theme-option">
+            <input type="radio" name="theme" value="light" data-theme-option>
+            <span>{{ t("system.theme.light") }}</span>
+        </label>
+    </div>
 
-    <section class="card">
-        <h2>Узел</h2>
-        <dl>
-            <dt>Имя</dt>
-            <dd>{{ session.get("node_name", "—") }}</dd>
-            <dt>IP адрес</dt>
-            <dd>{{ portal_status.ip_address or "—" }}</dd>
-            <dt>Hotspot SSID</dt>
-            <dd>{{ portal_status.hotspot_ssid }}</dd>
-        </dl>
-    </section>
+    <div class="system-section-title">{{ t("system.language") }}</div>
+    <form class="language-form" method="post" action="{{ url_for('main.update_language') }}">
+        <select class="language-select" name="language" aria-label="{{ t('system.language') }}">
+            {% for code, language in supported_languages.items() %}
+            <option value="{{ code }}" {% if code == current_language %}selected{% endif %}>{{ language.label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">{{ t("system.language_apply") }}</button>
+    </form>
 
-    <section class="card">
-        <form method="post" action="{{ url_for('main.logout') }}">
-            <button type="submit" class="btn btn-danger">Выйти из системы</button>
-        </form>
-    </section>
+    <div class="system-section-title">{{ t("system.widget") }}</div>
+    <select class="widget-style-select" name="widget_style" data-widget-style-select aria-label="{{ t('system.widget') }}">
+        <optgroup label="{{ t('system.widget_builtin') }}">
+            {% for style in widget_style_options if not style.custom %}
+            <option value="{{ style.id }}">{{ style.label }}</option>
+            {% endfor %}
+        </optgroup>
+        {% if custom_widget_styles %}
+        <optgroup label="{{ t('system.widget_custom') }}">
+            {% for style in custom_widget_styles %}
+            <option value="{{ style.id }}">{{ style.label }}</option>
+            {% endfor %}
+        </optgroup>
+        {% endif %}
+    </select>
 
+    <form class="widget-upload-form" method="post" action="{{ url_for('main.upload_widget') }}" enctype="multipart/form-data">
+        <input type="file" name="widget_file" accept=".zip,application/zip,application/x-zip-compressed" required>
+        <button type="submit">{{ t("system.widget_install") }}</button>
+    </form>
+
+    {% if custom_widget_styles %}
+    <div class="widget-list">
+        {% for style in custom_widget_styles %}
+        <div class="widget-list-row">
+            <span>
+                {{ style.label }}
+                {% if style.version or style.author %}
+                <small>{{ style.version }}{% if style.version and style.author %} &middot; {% endif %}{{ style.author }}</small>
+                {% endif %}
+            </span>
+            <form method="post" action="{{ url_for('main.delete_widget', style_id=style.id) }}">
+                <button class="secondary-button widget-delete" type="submit">{{ t("system.widget_delete") }}</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="system-section-title">{{ t("system.timeouts") }}</div>
+    <form method="post" action="{{ url_for('main.system') }}">
+        <input type="number" name="timeout_1" min="1" max="3600" value="{{ timeout_1 }}" placeholder="{{ t('system.timeout_1') }}">
+        <input type="number" name="timeout_2" min="1" max="3600" value="{{ timeout_2 }}" placeholder="{{ t('system.timeout_2') }}">
+        <button type="submit">{{ t("system.save") }}</button>
+    </form>
 </div>
 {% endblock %}

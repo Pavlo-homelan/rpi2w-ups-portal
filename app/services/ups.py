@@ -59,14 +59,14 @@ class UpsSnapshot:
     @property
     def battery_summary(self):
         if self.mains_present and self.battery_direction == "Charging":
-            return "Батарея заряжается от внешней сети"
+            return "Battery is charging from external power"
         if not self.mains_present and self.battery_direction == "Discharging":
-            return "Батарея питает нагрузку"
+            return "Battery is powering the load"
         if self.battery_status == "Full":
-            return "Батарея полностью заряжена"
+            return "Battery is fully charged"
         if self.battery_status == "Critical":
-            return "Нужен контроль питания и быстрая подзарядка"
-        return "Состояние батареи стабильно"
+            return "Power needs attention and fast charging"
+        return "Battery state is stable"
 
 
 class UpsManager:
@@ -124,28 +124,28 @@ class UpsManager:
                 name="Relay 1",
                 position="UPS" if mains_present else "BATTERY",
                 role="Selects load source",
-                detail="Переключает нагрузку между выходом ИБП и батареей.",
+                detail="Switches the load between UPS output and battery.",
             ),
             RelayState(
                 channel=2,
                 name="Relay 2",
                 position="CHARGE" if mains_present else "LOAD",
                 role="Battery route A",
-                detail="Совместно с Relay 3 переводит батарею либо на заряд, либо на питание нагрузки.",
+                detail="Together with Relay 3 routes the battery to charging or load power.",
             ),
             RelayState(
                 channel=3,
                 name="Relay 3",
                 position="CHARGE" if mains_present else "LOAD",
                 role="Battery route B",
-                detail="Работает синхронно с Relay 2 для безопасного переключения батареи.",
+                detail="Works with Relay 2 for safe battery switching.",
             ),
             RelayState(
                 channel=4,
                 name="Relay 4",
                 position="RESERVE",
                 role="Reserved channel",
-                detail="Резервный канал для будущей логики системы.",
+                detail="Reserved channel for future system logic.",
             ),
         ]
 

@@ -1,0 +1,5 @@
+<nav class="tabs" aria-label="Sections">
+    <a class="tab-link{% if active_tab == 'ups' %} active{% endif %}" href="{{ url_for('main.dashboard') }}">{{ t("tab.ups") }}</a>
+    <a class="tab-link{% if active_tab == 'wifi' %} active{% endif %}" href="{{ url_for('main.wifi_dashboard') }}">{{ t("tab.wifi") }}</a>
+    <a class="tab-link{% if active_tab == 'system' %} active{% endif %}" href="{{ url_for('main.system') }}">{{ t("tab.system") }}</a>
+</nav>
