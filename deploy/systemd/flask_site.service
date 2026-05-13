@@ -1,0 +1,16 @@
+[Unit]
+Description=Gunicorn service for Flask site
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/srv/flask-site
+Environment="PATH=/srv/flask-site/.venv/bin"
+EnvironmentFile=-/etc/default/rpi2w-portal
+Environment="SECRET_KEY=change-me-in-production"
+ExecStart=/srv/flask-site/.venv/bin/gunicorn --config gunicorn.conf.py wsgi:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}rpi2w portal{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    <header class="site-header">
+        <div class="container">
+            <a class="brand" href="{{ url_for('main.index') }}">
+                <span class="brand-mark">rpi2w</span>
+                <span class="brand-copy">wireless recovery portal</span>
+            </a>
+
+            <nav>
+                {% if session.get("authenticated") %}
+                    <a href="{{ url_for('main.dashboard') }}">Главная</a>
+                    <a href="{{ url_for('main.wifi_dashboard') }}">Wi-Fi</a>
+                    <a href="{{ url_for('main.health') }}">Health</a>
+                    <span class="nav-user">{{ session.get("username") }}</span>
+                    <form method="post" action="{{ url_for('main.logout') }}" class="inline-form">
+                        <button class="nav-button" type="submit">Выход</button>
+                    </form>
+                {% else %}
+                    <a href="{{ url_for('main.login') }}">Вход</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <section class="flash-stack" aria-label="Системные уведомления">
+                    {% for category, message in messages %}
+                        <article class="flash flash-{{ category }}">{{ message }}</article>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

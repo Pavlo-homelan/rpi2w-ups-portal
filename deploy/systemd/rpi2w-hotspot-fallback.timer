@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodic rpi2w fallback hotspot check
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=30s
+Unit=rpi2w-hotspot-fallback.service
+
+[Install]
+WantedBy=timers.target

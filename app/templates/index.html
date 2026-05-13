@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Главная | rpi2w{% endblock %}
+
+{% block body_class %}home-page{% endblock %}
+
+{% block content %}
+<section class="page-hero panel">
+    <div>
+        <p class="eyebrow">rpi2w / ups live overview</p>
+        <h1>Состояние датчиков и батареи</h1>
+        <p class="lead">
+            На главной странице видна живая сводка по питанию, батарее, INA219 и релейной
+            группе. Вход в портал нужен уже для настройки Wi‑Fi и сервисных операций.
+        </p>
+    </div>
+    <div class="hero-actions">
+        <a class="button secondary" href="{{ url_for('main.wifi_dashboard') }}">Открыть Wi‑Fi</a>
+    </div>
+</section>
+
+<section class="home-overview">
+    <section class="battery-panel panel">
+        <div class="section-head">
+            <div>
+                <p class="panel-kicker">Battery</p>
+                <h2>Статус батареи</h2>
+            </div>
+            <div class="battery-pill battery-pill-{{ ups_snapshot.battery_status|lower }}">
+                {{ ups_snapshot.battery_status }}
+            </div>
+        </div>
+
+        <div class="battery-topline">
+            <div>
+                <span class="status-label">Заряд</span>
+                <strong class="battery-percent">{{ ups_snapshot.battery_percent_label }}</strong>
+            </div>
+            <div>
+                <span class="status-label">Режим</span>
+                <strong>{{ ups_snapshot.battery_direction }}</strong>
+            </div>
+            <div>
+                <span class="status-label">Напряжение</span>
+                <strong>{{ ups_snapshot.voltage_label }}</strong>
+            </div>
+        </div>
+
+        <div class="battery-meter" aria-label="Battery charge">
+            <div class="battery-meter-fill" style="width: {{ ups_snapshot.battery_percent }}%"></div>
+        </div>
+
+        <p class="battery-summary">{{ ups_snapshot.battery_summary }}</p>
+    </section>
+
+    <section class="sensor-grid">
+        <article class="summary-card panel">
+            <span class="status-label">Сеть 220 В</span>
+            <strong>{{ ups_snapshot.mains_label }}</strong>
+            <p>Датчик {{ ups_snapshot.ac_sensor_pin }} показывает состояние внешнего питания.</p>
+        </article>
+
+        <article class="summary-card panel">
+            <span class="status-label">INA219 ток</span>
+            <strong>{{ ups_snapshot.current_label }}</strong>
+            <p>{{ ups_snapshot.battery_direction }}. Мощность: {{ ups_snapshot.power_label }}.</p>
+        </article>
+
+        <article class="summary-card panel">
+            <span class="status-label">Нагрузка</span>
+            <strong>{{ ups_snapshot.load_source }}</strong>
+            <p>{{ ups_snapshot.battery_route }}.</p>
+        </article>
+
+        <article class="summary-card panel">
+            <span class="status-label">Портал</span>
+            <strong>{{ portal_status.portal_mode_label }}</strong>
+            <p>Wi‑Fi backend: {{ portal_status.backend }}. Hotspot: {{ portal_status.hotspot_ssid }}.</p>
+        </article>
+    </section>
+</section>
+
+<section class="hardware-layout">
+    <section class="hardware-panel panel">
+        <div class="section-head">
+            <div>
+                <p class="panel-kicker">Relay map</p>
+                <h2>Состояние реле</h2>
+            </div>
+            <p class="section-copy">
+                Схема реле показывает, как система сейчас должна вести себя по силовой части.
+            </p>
+        </div>
+
+        <div class="relay-grid">
+            {% for relay in ups_snapshot.relays %}
+                <article class="relay-card">
+                    <div class="relay-card-head">
+                        <span class="relay-index">K{{ relay.channel }}</span>
+                        <span class="relay-state">{{ relay.position }}</span>
+                    </div>
+                    <h3>{{ relay.name }}</h3>
+                    <p class="relay-role">{{ relay.role }}</p>
+                    <p>{{ relay.detail }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+</section>
+{% endblock %}

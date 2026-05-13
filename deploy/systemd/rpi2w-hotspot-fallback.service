@@ -1,0 +1,9 @@
+[Unit]
+Description=rpi2w fallback hotspot check
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/default/rpi2w-portal
+ExecStart=/usr/local/bin/rpi2w-hotspot-fallback.sh

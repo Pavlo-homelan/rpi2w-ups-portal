@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Вход в портал | rpi2w{% endblock %}
+
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<section class="auth-layout auth-layout-centered">
+    <div class="auth-overview panel auth-overview-compact">
+        <p class="eyebrow">rpi2w / protected access</p>
+        <h1>Вход в сервисный портал rpi2w</h1>
+        <p class="lead">
+            После авторизации откроется основная страница с данными датчиков,
+            состоянием батареи и релейной логикой UPS. Настройка Wi‑Fi вынесена
+            в отдельный раздел портала.
+        </p>
+
+        <ul class="signal-list">
+            <li>Без авторизации данные системы и настройки сети недоступны</li>
+            <li>Первая страница после входа показывает датчики, батарею и силовую схему</li>
+            <li>Wi‑Fi открывается отдельной страницей после входа</li>
+        </ul>
+    </div>
+
+    <section class="login-shell panel" aria-labelledby="login-title">
+        <div class="login-shell-head">
+            <p class="panel-kicker">Protected entry point</p>
+            <h2 id="login-title">Авторизация</h2>
+            <p class="panel-copy">
+                Введите данные сервисного пользователя, чтобы открыть дашборд системы
+                и перейти к управлению Wi‑Fi.
+            </p>
+        </div>
+
+        <form class="login-form" method="post" action="{{ url_for('main.login') }}">
+            <label class="field">
+                <span>Системный логин</span>
+                <input
+                    type="text"
+                    name="username"
+                    value="{{ form_data.username }}"
+                    placeholder="operator.rpi2w"
+                    autocomplete="username"
+                    required
+                >
+            </label>
+
+            <label class="field">
+                <span>Пароль</span>
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Введите пароль"
+                    autocomplete="current-password"
+                    required
+                >
+            </label>
+
+            <label class="field">
+                <span>Узел rpi2w</span>
+                <input
+                    type="text"
+                    name="node_name"
+                    value="{{ form_data.node_name }}"
+                    placeholder="rpi2w-core-01"
+                    autocomplete="off"
+                >
+            </label>
+
+            <button class="button primary login-button" type="submit">Войти в портал</button>
+        </form>
+    </section>
+</section>
+{% endblock %}
