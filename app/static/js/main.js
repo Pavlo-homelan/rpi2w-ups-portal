@@ -21,7 +21,8 @@ function stateLabel(state) {
 
 async function updateData() {
     const title = document.getElementById('status-title');
-    if (!title) {
+    const hasLiveTargets = document.querySelector('[data-live]') || document.getElementById('battery-bar');
+    if (!hasLiveTargets) {
         return;
     }
 
@@ -31,8 +32,10 @@ async function updateData() {
         const data = await response.json();
         const statusText = stateLabel(data.state);
 
-        title.innerText = title.closest('.ups-widget') ? statusText : `${statusText} (${data.percent}%)`;
-        title.className = data.state;
+        if (title) {
+            title.innerText = title.closest('.ups-widget') ? statusText : `${statusText} (${data.percent}%)`;
+            title.className = data.state;
+        }
 
         const bar = document.getElementById('battery-bar');
         if (bar) {
@@ -76,7 +79,11 @@ async function updateData() {
             voltage: Number(data.v).toFixed(2) + 'V',
             current: Number(data.i).toFixed(0) + 'mA',
             cpu: Number(data.cpu_temp).toFixed(1),
-            ram: `${Number(data.ram_used).toFixed(1)}MB (${Number(data.ram_percent).toFixed(1)}%)`
+            'cpu-full': `${Number(data.cpu_temp).toFixed(1)}°C`,
+            ram: `${Number(data.ram_used).toFixed(1)}MB (${Number(data.ram_percent).toFixed(1)}%)`,
+            'wifi-ssid': data.connected_ssid_label || '',
+            'portal-mode': data.portal_mode_label || '',
+            'wifi-ip': data.ip_address_label || ''
         };
 
         for (const [key, value] of Object.entries(liveValues)) {

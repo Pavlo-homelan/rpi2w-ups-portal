@@ -7,6 +7,25 @@
 {% block page_footer %}{% include "_page_footer.html" %}{% endblock %}
 
 {% block content %}
-{# Rollback: replace this include with "_ups_card_legacy.html". #}
-{% include "_ups_card_widget.html" %}
+<div class="dashboard-grid">
+    {% for dashboard_widget in dashboard_widgets %}
+        {% if dashboard_widget.kind == "ups" %}
+            {# Rollback: replace this include with "_ups_card_legacy.html". #}
+            {% set data = dashboard_widget.data %}
+            {% include "_ups_card_widget.html" %}
+        {% elif dashboard_widget.kind == "sensor_cpu" %}
+            {% include "_dashboard_widget_sensor.html" %}
+        {% elif dashboard_widget.kind == "sensor_ram" %}
+            {% include "_dashboard_widget_sensor.html" %}
+        {% elif dashboard_widget.kind == "status_wifi" %}
+            {% include "_dashboard_widget_status.html" %}
+        {% endif %}
+    {% else %}
+        <div class="card dashboard-empty">
+            <h2>{{ t("dashboard.empty.title") }}</h2>
+            <p>{{ t("dashboard.empty.text") }}</p>
+            <a class="secondary-button dashboard-empty-link" href="{{ url_for('main.system') }}">{{ t("dashboard.empty.action") }}</a>
+        </div>
+    {% endfor %}
+</div>
 {% endblock %}

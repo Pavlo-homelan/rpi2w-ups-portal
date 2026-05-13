@@ -12,6 +12,7 @@ from .i18n import (
 from .routes import main
 from .services.auth import SystemAuthService
 from .services.config import ConfigManager
+from .services.dashboard_widgets import DashboardWidgetManager
 from .services.ups import UpsManager
 from .services.widgets import WidgetManager
 from .services.wifi import WifiManager
@@ -74,6 +75,11 @@ def create_app(config_class=Config):
         os.getenv("UPS_PI_NODE_WIDGETS_DIR")
         or app.config.get("UPS_PI_NODE_WIDGETS_DIR")
         or os.path.join(app.instance_path, "widgets")
+    )
+    app.extensions["ups_pi_node_dashboard_widgets"] = DashboardWidgetManager(
+        os.getenv("UPS_PI_NODE_DASHBOARD_WIDGETS_FILE")
+        or app.config.get("UPS_PI_NODE_DASHBOARD_WIDGETS_FILE")
+        or os.path.join(app.instance_path, "dashboard-widgets.json")
     )
 
     @app.before_request

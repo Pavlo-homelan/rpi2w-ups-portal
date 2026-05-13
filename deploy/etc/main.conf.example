@@ -6,6 +6,13 @@
 # Interface language: uk | en
 language = uk
 
+[integrations]
+# Stable node id used by Zabbix and Home Assistant payloads
+node_id = ups-pi-node
+# Optional API token for /api/integrations/*.
+# Leave empty for local/plain metrics access.
+token =
+
 [load]
 # Temporary load disconnect timeouts in seconds
 timeout_1 = 30

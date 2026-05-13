@@ -7,14 +7,13 @@ CONF_DIR="/etc/ups-pi-node"
 ENV_FILE="/etc/default/ups-pi-node"
 VENV_DIR="$VAR_DIR/.venv"
 WIDGETS_DIR="$VAR_DIR/widgets"
+DASHBOARD_WIDGETS_FILE="$VAR_DIR/dashboard-widgets.json"
 
 case "$1" in
     configure)
-        # Создать директории конфига и runtime-данных
         mkdir -p "$CONF_DIR"
         mkdir -p "$WIDGETS_DIR"
 
-        # Создать environment-файл с уникальным Flask secret key
         if [ ! -f "$ENV_FILE" ]; then
             secret_key="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
             old_umask="$(umask)"
@@ -23,21 +22,20 @@ case "$1" in
                 printf 'UPS_PI_NODE_SECRET_KEY=%s\n' "$secret_key"
                 printf 'UPS_PI_NODE_CONFIG_FILE=%s/main.conf\n' "$CONF_DIR"
                 printf 'UPS_PI_NODE_WIDGETS_DIR=%s\n' "$WIDGETS_DIR"
+                printf 'UPS_PI_NODE_DASHBOARD_WIDGETS_FILE=%s\n' "$DASHBOARD_WIDGETS_FILE"
             } > "$ENV_FILE"
             umask "$old_umask"
             chown root:www-data "$ENV_FILE"
             chmod 640 "$ENV_FILE"
-            echo "Создан environment-файл: $ENV_FILE"
+            echo "Created environment file: $ENV_FILE"
         fi
 
-        # Скопировать пример конфига если основной отсутствует
         if [ ! -f "$CONF_DIR/main.conf" ]; then
             cp "$CONF_DIR/main.conf.example" "$CONF_DIR/main.conf"
             chmod 660 "$CONF_DIR/main.conf"
-            echo "Создан конфиг: $CONF_DIR/main.conf — отредактируйте под своё железо."
+            echo "Created config: $CONF_DIR/main.conf"
         fi
 
-        # Создать virtualenv и установить зависимости
         if [ ! -d "$VENV_DIR" ]; then
             python3 -m venv --system-site-packages "$VENV_DIR"
         elif [ -f "$VENV_DIR/pyvenv.cfg" ]; then
@@ -49,7 +47,6 @@ case "$1" in
         fi
         "$VENV_DIR/bin/pip" install --quiet -r "$APP_DIR/requirements.txt"
 
-        # Права доступа
         chown -R root:root "$APP_DIR"
         find "$APP_DIR" -type d -exec chmod 755 {} +
         find "$APP_DIR" -type f -exec chmod 644 {} +
@@ -58,17 +55,14 @@ case "$1" in
         chown root:www-data "$CONF_DIR/main.conf"
         chmod 660 "$CONF_DIR/main.conf"
 
-        # Скрипт hotspot
         chmod +x /usr/bin/ups-pi-node-hotspot-fallback
 
-        # Nginx: включить сайт
         if [ -f /etc/nginx/sites-enabled/default ]; then
             rm -f /etc/nginx/sites-enabled/default
         fi
         ln -sf /etc/nginx/sites-available/ups-pi-node \
                /etc/nginx/sites-enabled/ups-pi-node
 
-        # Systemd
         systemctl daemon-reload
         systemctl enable ups-pi-node-helper.service
         systemctl enable ups-pi-node.service

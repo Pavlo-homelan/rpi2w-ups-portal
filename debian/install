@@ -11,3 +11,6 @@ deploy/systemd/ups-pi-node-helper.service       usr/lib/systemd/system/
 deploy/systemd/ups-pi-node-hotspot-fallback.service usr/lib/systemd/system/
 deploy/systemd/ups-pi-node-hotspot-fallback.timer usr/lib/systemd/system/
 deploy/scripts/ups-pi-node-hotspot-fallback     usr/bin/
+deploy/zabbix/ups-pi-node-agent.conf            usr/share/doc/ups-pi-node/examples/zabbix/
+docs/integrations.md                            usr/share/doc/ups-pi-node/
+docs/widgets.md                                 usr/share/doc/ups-pi-node/

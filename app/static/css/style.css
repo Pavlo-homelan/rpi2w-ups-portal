@@ -56,6 +56,14 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--
 .header-logout { width: auto; padding: 6px 10px; background: transparent; border: 1px solid var(--danger-border); color: var(--red); font-size: 1em; }
 .page-footer { padding: 10px 20px 14px; border-top: 1px solid var(--page-line); color: var(--muted-soft); font-size: 0.8em; text-align: center; }
 .card { border: 1px solid var(--border); padding: 30px; border-radius: 20px; background: var(--card); box-shadow: var(--shadow); width: 380px; max-width: calc(100vw - 40px); box-sizing: border-box; text-align: center; }
+.dashboard-grid { width: min(860px, 100%); display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 380px)); justify-content: center; align-items: start; gap: 16px; }
+.dashboard-widget-card { width: 100%; min-height: 118px; display: grid; align-content: center; gap: 8px; padding: 18px; text-align: left; }
+.dashboard-widget-label { color: var(--muted); font-size: 0.78em; font-weight: bold; text-transform: uppercase; }
+.dashboard-widget-value { overflow: hidden; color: var(--text); font-family: monospace; font-size: 1.45em; text-overflow: ellipsis; white-space: nowrap; }
+.dashboard-widget-detail { overflow: hidden; color: var(--muted); font-size: 0.85em; text-overflow: ellipsis; white-space: nowrap; }
+.dashboard-empty { display: grid; gap: 10px; }
+.dashboard-empty p { margin: 0; color: var(--muted); font-size: 0.9em; }
+.dashboard-empty-link { display: inline-block; justify-self: center; width: auto; padding: 9px 12px; text-decoration: none; }
 .ups-widget { display: grid; gap: 18px; padding: 24px; text-align: left; }
 .widget-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
 .widget-label { color: var(--muted); font-size: 0.8em; font-weight: bold; }
@@ -173,6 +181,8 @@ button:disabled { opacity: 0.5; cursor: default; }
 .widget-list-row form { margin: 0; }
 .secondary-button { background: var(--surface-strong); border: 1px solid var(--border); color: var(--text); }
 .widget-delete { width: auto; padding: 7px 10px; border-color: var(--danger-border); color: var(--red); font-size: 0.85em; }
+.widget-add { width: auto; padding: 7px 10px; font-size: 0.85em; }
+.system-empty-note { margin: 0; padding: 8px; color: var(--muted); font-size: 0.85em; text-align: left; }
 .system-section-title { margin: 16px 0 6px; color: var(--muted); font-size: 0.85em; font-weight: bold; text-align: left; }
 
 @media (max-width: 720px) {

@@ -1,4 +1,5 @@
 from functools import wraps
+from hmac import compare_digest
 
 from flask import (
     Blueprint,
@@ -15,6 +16,18 @@ from flask import (
 )
 
 from .i18n import SUPPORTED_LANGUAGES, normalize_language, translate
+from .services.integration_metrics import (
+    build_home_assistant_payload,
+    build_metrics_payload,
+    build_zabbix_discovery_payload,
+    metric_value_as_text,
+)
+from .services.system_stats import (
+    get_cpu_temp_label,
+    get_cpu_temp_value,
+    get_ram_label,
+    get_ram_stats,
+)
 from .services.widgets import WidgetUploadError
 
 
@@ -39,6 +52,10 @@ def get_config_manager():
 
 def get_widget_manager():
     return current_app.extensions["ups_pi_node_widgets"]
+
+
+def get_dashboard_widget_manager():
+    return current_app.extensions["ups_pi_node_dashboard_widgets"]
 
 
 def current_language():
@@ -88,52 +105,6 @@ def render_login_page(form_data=None):
     )
 
 
-def get_cpu_temp_label():
-    value = get_cpu_temp_value()
-    if value is None:
-        return "--"
-    return f"{value:.1f} C"
-
-
-def get_cpu_temp_value():
-    temp_path = "/sys/class/thermal/thermal_zone0/temp"
-    try:
-        with open(temp_path, "r", encoding="utf-8") as temp_file:
-            return int(temp_file.read().strip()) / 1000
-    except (OSError, ValueError):
-        return None
-
-
-def get_ram_label():
-    stats = get_ram_stats()
-    if not stats:
-        return "--"
-
-    return f"{stats['used_mb']:.0f} MB ({stats['percent']:.0f}%)"
-
-
-def get_ram_stats():
-    meminfo = {}
-    try:
-        with open("/proc/meminfo", "r", encoding="utf-8") as meminfo_file:
-            for line in meminfo_file:
-                key, value = line.split(":", 1)
-                meminfo[key] = int(value.strip().split()[0])
-    except (OSError, ValueError, IndexError):
-        return None
-
-    total = meminfo.get("MemTotal")
-    available = meminfo.get("MemAvailable")
-    if not total or available is None:
-        return None
-
-    used = max(0, total - available)
-    return {
-        "used_mb": round(used / 1024, 1),
-        "percent": round((used / total) * 100, 1),
-    }
-
-
 def build_card_status_payload(ups_snapshot=None):
     snapshot = ups_snapshot or get_ups_manager().get_snapshot()
     current_abs = abs(snapshot.current_ma)
@@ -178,6 +149,10 @@ def build_live_status_payload():
         "portal_mode_label": portal_status.portal_mode_label,
         "wifi_backend": portal_status.backend,
         "interface": portal_status.interface,
+        "connected_ssid": portal_status.connected_ssid,
+        "connected_ssid_label": portal_status.connected_ssid or tr("wifi.none"),
+        "ip_address": portal_status.ip_address,
+        "ip_address_label": portal_status.ip_address or "--",
         "mains_present": ups_snapshot.mains_present,
         "mains_label": ups_snapshot.mains_label,
         "ups_mode": ups_snapshot.mode_label,
@@ -196,6 +171,49 @@ def build_live_status_payload():
     }
     payload.update(build_card_status_payload(ups_snapshot))
     return payload
+
+
+def build_dashboard_widget_payloads(base_context):
+    payloads = []
+    data = build_card_status_payload(base_context["ups_snapshot"])
+    portal_status = base_context["portal_status"]
+
+    for widget in get_dashboard_widget_manager().list_active():
+        item = dict(widget)
+        if item["kind"] == "ups":
+            item["data"] = data
+        elif item["kind"] == "sensor_cpu":
+            item["value"] = get_cpu_temp_label()
+            item["live_key"] = "cpu-full"
+        elif item["kind"] == "sensor_ram":
+            item["value"] = get_ram_label()
+            item["live_key"] = "ram"
+        elif item["kind"] == "status_wifi":
+            item["value"] = portal_status.connected_ssid or tr("wifi.none")
+            item["detail"] = portal_status.portal_mode_label
+            item["live_key"] = "wifi-ssid"
+            item["detail_live_key"] = "portal-mode"
+        payloads.append(item)
+
+    return payloads
+
+
+def integrations_allowed():
+    token = get_config_manager().integrations_token
+    if not token:
+        return True
+    supplied = request.headers.get("X-UPS-PI-NODE-Token") or request.args.get("token", "")
+    return bool(supplied) and compare_digest(supplied, token)
+
+
+def build_integration_payload():
+    config = get_config_manager()
+    return build_metrics_payload(get_ups_manager().get_snapshot(), config.node_id)
+
+
+def require_integrations_access():
+    if not integrations_allowed():
+        abort(403)
 
 
 @main.get("/")
@@ -259,6 +277,7 @@ def wifi_dashboard():
 def dashboard():
     context = build_portal_context(scan_networks=False)
     context["data"] = build_card_status_payload(context["ups_snapshot"])
+    context["dashboard_widgets"] = build_dashboard_widget_payloads(context)
     context["user"] = context["current_user"]
     return render_template("index.html", **context)
 
@@ -267,6 +286,46 @@ def dashboard():
 @login_required
 def api_data():
     return build_live_status_payload(), 200
+
+
+@main.get("/api/integrations/metrics")
+def integration_metrics():
+    require_integrations_access()
+    return build_integration_payload(), 200
+
+
+@main.get("/api/integrations/zabbix")
+def zabbix_metrics():
+    require_integrations_access()
+    payload = build_integration_payload()
+    return {
+        "schema": payload["schema"],
+        "node": payload["node"],
+        "metrics": payload["metrics"],
+    }, 200
+
+
+@main.get("/api/integrations/zabbix/discovery")
+def zabbix_discovery():
+    require_integrations_access()
+    return build_zabbix_discovery_payload(), 200
+
+
+@main.get("/api/integrations/zabbix/<path:metric_key>")
+def zabbix_metric(metric_key):
+    require_integrations_access()
+    metrics = build_integration_payload()["metrics"]
+    value = metric_value_as_text(metrics, metric_key)
+    if value is None:
+        abort(404)
+    return value + "\n", 200, {"Content-Type": "text/plain; charset=utf-8"}
+
+
+@main.get("/api/integrations/home-assistant")
+def home_assistant_discovery():
+    require_integrations_access()
+    config = get_config_manager()
+    return build_home_assistant_payload(config.node_id), 200
 
 
 @main.post("/wifi/connect")
@@ -331,6 +390,26 @@ def delete_widget(style_id):
     return redirect(url_for("main.system"))
 
 
+@main.post("/system/dashboard-widgets/<widget_id>/add")
+@login_required
+def add_dashboard_widget(widget_id):
+    if get_dashboard_widget_manager().add(widget_id):
+        flash_t("flash.dashboard_widget_added", "success")
+    else:
+        flash_t("flash.dashboard_widget_not_found", "error")
+    return redirect(url_for("main.system"))
+
+
+@main.post("/system/dashboard-widgets/<widget_id>/remove")
+@login_required
+def remove_dashboard_widget(widget_id):
+    if get_dashboard_widget_manager().remove(widget_id):
+        flash_t("flash.dashboard_widget_removed", "success")
+    else:
+        flash_t("flash.dashboard_widget_not_found", "error")
+    return redirect(url_for("main.system"))
+
+
 @main.post("/system/language")
 @login_required
 def update_language():
@@ -374,6 +453,8 @@ def system():
         "timeout_1": config.load_timeout_1,
         "timeout_2": config.load_timeout_2,
         "ui_language": config.ui_language,
+        "active_dashboard_widgets": get_dashboard_widget_manager().list_active(),
+        "available_dashboard_widgets": get_dashboard_widget_manager().list_available(),
     }
     return render_template("system.html", **context)
 

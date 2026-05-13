@@ -57,6 +57,16 @@ class ConfigManager:
     def ui_language(self):
         return normalize_language(self.get("ui", "language", fallback=DEFAULT_LANGUAGE))
 
+    # --- integrations ---
+
+    @property
+    def node_id(self):
+        return self.get("integrations", "node_id", fallback=os.getenv("UPS_PI_NODE_NODE_ID", "ups-pi-node"))
+
+    @property
+    def integrations_token(self):
+        return self.get("integrations", "token", fallback=os.getenv("UPS_PI_NODE_INTEGRATIONS_TOKEN", ""))
+
     # --- system helper ---
 
     @property

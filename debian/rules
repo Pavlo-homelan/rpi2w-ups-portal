@@ -4,10 +4,10 @@
 	dh $@
 
 override_dh_auto_build:
-	# Зависимости устанавливаются в postinst через pip в venv
+	# Dependencies are installed in postinst through pip in the runtime venv.
 
 override_dh_auto_install:
-	# Файлы раскладываются через debian/install
+	# Files are installed through debian/install.
 
 override_dh_fixperms:
 	dh_fixperms

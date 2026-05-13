@@ -13,7 +13,9 @@ The project is designed for a Raspberry Pi based power node: the web app stays l
 - Theme selector for dark and light UI.
 - Interface language selector with Ukrainian and English only.
 - UPS widget selector with built-in widget styles.
+- Removable dashboard widgets for the main UPS card, CPU, RAM, and Wi-Fi status.
 - Custom widget installation from ZIP packages with CSS, images, and fonts.
+- Zabbix and Home Assistant integration metrics without Wi-Fi/portal-mode telemetry.
 - Configuration through `/etc/ups-pi-node/main.conf`.
 
 ## Runtime Layout
@@ -28,7 +30,7 @@ Default install paths:
 /run/ups-pi-node/helper.sock
 ```
 
-Application code is installed read-only under `/usr/lib/ups-pi-node`; runtime state such as the virtualenv and uploaded widget packages lives under `/var/lib/ups-pi-node`.
+Application code is installed read-only under `/usr/lib/ups-pi-node`; runtime state such as the virtualenv, uploaded widget packages, and dashboard widget layout lives under `/var/lib/ups-pi-node`.
 
 Main services:
 
@@ -45,8 +47,11 @@ Preferred environment variables use the `UPS_PI_NODE_` prefix:
 
 ```text
 UPS_PI_NODE_SECRET_KEY
+UPS_PI_NODE_NODE_ID
+UPS_PI_NODE_INTEGRATIONS_TOKEN
 UPS_PI_NODE_CONFIG_FILE
 UPS_PI_NODE_WIDGETS_DIR
+UPS_PI_NODE_DASHBOARD_WIDGETS_FILE
 UPS_PI_NODE_AUTH_MODE
 UPS_PI_NODE_PORTAL_USERNAME
 UPS_PI_NODE_PORTAL_PASSWORD
@@ -98,6 +103,12 @@ my-widget.zip
 ```
 
 See [docs/widgets.md](docs/widgets.md) for the widget package format, CSS variables, live fields, assets, fonts, and animation support.
+
+## Integrations
+
+Zabbix and Home Assistant receive only useful UPS/system metrics: battery, voltage, current, power, AC state, CPU, RAM, and app health. Wi-Fi SSID, hotspot state, and portal mode stay local to the UI.
+
+See [docs/integrations.md](docs/integrations.md) for metric keys, Zabbix agent parameters, and Home Assistant discovery payloads.
 
 ## Stack
 
