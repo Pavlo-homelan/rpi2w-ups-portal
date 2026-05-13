@@ -1,0 +1,14 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	# Зависимости устанавливаются в postinst через pip в venv
+
+override_dh_auto_install:
+	# Файлы раскладываются через debian/install
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod +x debian/rpi2w-ups-portal/usr/local/bin/rpi2w-hotspot-fallback.sh

@@ -1,0 +1,50 @@
+#!/bin/bash
+set -e
+
+APP_DIR="/srv/rpi2w-ups-portal"
+CONF_DIR="/etc/rpi2w-portal"
+VENV_DIR="$APP_DIR/.venv"
+
+case "$1" in
+    configure)
+        # Создать директорию конфига
+        mkdir -p "$CONF_DIR"
+
+        # Скопировать пример конфига если основной отсутствует
+        if [ ! -f "$CONF_DIR/main.conf" ]; then
+            cp "$CONF_DIR/main.conf.example" "$CONF_DIR/main.conf"
+            chmod 640 "$CONF_DIR/main.conf"
+            echo "Создан конфиг: $CONF_DIR/main.conf — отредактируйте под своё железо."
+        fi
+
+        # Создать virtualenv и установить зависимости
+        if [ ! -d "$VENV_DIR" ]; then
+            python3 -m venv "$VENV_DIR"
+        fi
+        "$VENV_DIR/bin/pip" install --quiet -r "$APP_DIR/requirements.txt"
+
+        # Права доступа
+        chown -R www-data:www-data "$APP_DIR"
+        chown root:www-data "$CONF_DIR/main.conf"
+
+        # Скрипт hotspot
+        chmod +x /usr/local/bin/rpi2w-hotspot-fallback.sh
+
+        # Nginx: включить сайт
+        if [ -f /etc/nginx/sites-enabled/default ]; then
+            rm -f /etc/nginx/sites-enabled/default
+        fi
+        ln -sf /etc/nginx/sites-available/rpi2w-ups-portal \
+               /etc/nginx/sites-enabled/rpi2w-ups-portal
+
+        # Systemd
+        systemctl daemon-reload
+        systemctl enable flask_site.service
+        systemctl enable rpi2w-hotspot-fallback.timer
+        systemctl restart flask_site.service
+        systemctl restart rpi2w-hotspot-fallback.timer
+        systemctl reload nginx || true
+        ;;
+esac
+
+exit 0

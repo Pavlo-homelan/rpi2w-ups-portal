@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Система — rpi2w{% endblock %}
+
+{% block content %}
+<div class="page-system">
+
+    <section class="card">
+        <h2>Управление нагрузкой</h2>
+        <form method="post" action="{{ url_for('main.system') }}">
+            <div class="form-row">
+                <label for="timeout_1">Таймаут кнопки 1 (сек)</label>
+                <input id="timeout_1" name="timeout_1" type="number" min="1" max="3600"
+                       value="{{ timeout_1 }}">
+            </div>
+            <div class="form-row">
+                <label for="timeout_2">Таймаут кнопки 2 (сек)</label>
+                <input id="timeout_2" name="timeout_2" type="number" min="1" max="3600"
+                       value="{{ timeout_2 }}">
+            </div>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+        </form>
+    </section>
+
+    <section class="card">
+        <h2>Подключение</h2>
+        <dl>
+            <dt>Режим авторизации</dt>
+            <dd>{{ auth_meta.label }}</dd>
+            <dt>Описание</dt>
+            <dd>{{ auth_meta.description }}</dd>
+            <dt>Бэкенд Wi-Fi</dt>
+            <dd>{{ portal_status.backend }}</dd>
+            <dt>Интерфейс</dt>
+            <dd>{{ portal_status.interface }}</dd>
+        </dl>
+    </section>
+
+    <section class="card">
+        <h2>Узел</h2>
+        <dl>
+            <dt>Имя</dt>
+            <dd>{{ session.get("node_name", "—") }}</dd>
+            <dt>IP адрес</dt>
+            <dd>{{ portal_status.ip_address or "—" }}</dd>
+            <dt>Hotspot SSID</dt>
+            <dd>{{ portal_status.hotspot_ssid }}</dd>
+        </dl>
+    </section>
+
+    <section class="card">
+        <form method="post" action="{{ url_for('main.logout') }}">
+            <button type="submit" class="btn btn-danger">Выйти из системы</button>
+        </form>
+    </section>
+
+</div>
+{% endblock %}

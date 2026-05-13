@@ -27,6 +27,10 @@ def get_wifi_manager():
     return current_app.extensions["rpi2w_wifi"]
 
 
+def get_config_manager():
+    return current_app.extensions["rpi2w_config"]
+
+
 def login_required(view):
     @wraps(view)
     def wrapped_view(*args, **kwargs):
@@ -131,6 +135,33 @@ def connect_wifi():
     result = get_wifi_manager().connect(ssid=ssid, password=password, hidden=hidden)
     flash(result.message, "success" if result.success else "error")
     return redirect(url_for("main.wifi_dashboard"))
+
+
+@main.route("/system", methods=["GET", "POST"])
+@login_required
+def system():
+    config = get_config_manager()
+
+    if request.method == "POST":
+        try:
+            t1 = int(request.form.get("timeout_1", config.load_timeout_1))
+            t2 = int(request.form.get("timeout_2", config.load_timeout_2))
+            config.set("load", "timeout_1", t1)
+            config.set("load", "timeout_2", t2)
+            config.save()
+            flash("Настройки сохранены.", "success")
+        except (ValueError, OSError) as exc:
+            flash(f"Ошибка сохранения настроек: {exc}", "error")
+        return redirect(url_for("main.system"))
+
+    context = {
+        "current_user": session.get("username"),
+        "auth_meta": get_auth_service().metadata(),
+        "portal_status": get_wifi_manager().get_status(),
+        "timeout_1": config.load_timeout_1,
+        "timeout_2": config.load_timeout_2,
+    }
+    return render_template("system.html", **context)
 
 
 @main.get("/health")

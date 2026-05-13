@@ -1,0 +1,39 @@
+# /etc/rpi2w-portal/main.conf
+# Конфигурация портала управления rpi2w-ups
+# Скопируйте этот файл в /etc/rpi2w-portal/main.conf и отредактируйте под своё железо.
+
+[load]
+# Таймауты временного отключения нагрузки (в секундах)
+timeout_1 = 30
+timeout_2 = 300
+
+[gpio]
+# GPIO пины (BCM-нумерация)
+# Заполняется после ревизии платы
+ac_detect_pin = 17
+relay_1_pin = 23
+relay_2_pin = 24
+relay_3_pin = 25
+relay_4_pin = 8
+load_enable_pin = 7
+
+[wifi]
+# Бэкенд: mock | nmcli
+backend = nmcli
+interface = wlan0
+hotspot_connection = rpi2w-hotspot
+hotspot_ssid = rpi2w-setup
+hotspot_address = 10.42.0.1
+# Режим портала: auto | ap | client
+portal_mode = auto
+
+[ups]
+# Бэкенд: mock | ina219
+backend = ina219
+ac_sensor_pin = AC_DETECT
+battery_empty_voltage = 10.8
+battery_full_voltage = 12.6
+
+[auth]
+# Режим авторизации: mock | env | pam
+mode = pam

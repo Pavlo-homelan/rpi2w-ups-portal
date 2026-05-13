@@ -1,0 +1,21 @@
+Source: rpi2w-ups-portal
+Section: net
+Priority: optional
+Maintainer: Pavlo <pavlo@homelan>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+
+Package: rpi2w-ups-portal
+Architecture: all
+Depends: python3 (>= 3.11),
+         python3-venv,
+         nginx,
+         network-manager,
+         python3-pam
+Description: Web portal for rpi2w UPS management
+ Flask web portal for managing UPS module on Raspberry Pi 2W.
+ Provides Wi-Fi management, UPS monitoring and load control
+ via a mobile-friendly dark dashboard.
+ .
+ When the device cannot connect to a Wi-Fi network it raises
+ a fallback hotspot so the user can configure networking via browser.
