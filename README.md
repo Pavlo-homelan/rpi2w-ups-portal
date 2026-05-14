@@ -114,9 +114,13 @@ The current hardware profile follows the original working controller.
 | --- | ---: | --- |
 | AC detect input | 17 | Input with pull-up; active low means AC OK |
 | Relay 1 | 27 | Load source selection |
-| Relay 2 | 22 | Charge/load route |
+| Relay 2 pair | 22 | Two physical relays on one GPIO for synchronized battery charge/load switching |
 
 The INA219 uses I2C bus 1 at address `0x40`.
+
+On the verified hardware, the battery route is switched by two relay modules
+connected to the same GPIO22 control line. They move together so the battery is
+switched synchronously between the charger path and the load path.
 
 ## Runtime Layout
 
