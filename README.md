@@ -1,5 +1,10 @@
 # ups-pi-node
 
+![Version](https://img.shields.io/badge/version-0.2.1--4-blue)
+![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
+![Build](https://img.shields.io/badge/build-deb%20package%20verified-success)
+![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi%20Zero%202%20W-lightgrey)
+
 ![ups-pi-node banner](assets/ups-pi-node-banner.png)
 
 `ups-pi-node` is a small web-managed UPS node for Raspberry Pi hardware. It monitors UPS state, exposes a local browser UI, manages Wi-Fi setup, and can raise a fallback hotspot when the device is not connected to a known network.
@@ -10,6 +15,14 @@ such as INA219 sensors, relay boards, Li-ion battery packs, and small SPI TFT
 screens.
 
 The project is designed for a Raspberry Pi based power node: the web app stays lightweight, and privileged system operations are delegated to a helper service instead of being executed directly by the site.
+
+## Web UI Preview
+
+Real screenshots from the verified Raspberry Pi Zero 2 W node:
+
+| Login | UPS dashboard | Wi-Fi setup | System settings |
+| --- | --- | --- | --- |
+| <img src="assets/screenshots/login-mobile.jpeg" width="180" alt="Login screen"> | <img src="assets/screenshots/dashboard-mobile.jpeg" width="180" alt="UPS dashboard"> | <img src="assets/screenshots/wifi-mobile.jpeg" width="180" alt="Wi-Fi setup"> | <img src="assets/screenshots/system-mobile.jpeg" width="180" alt="System settings"> |
 
 ## Features
 
@@ -123,6 +136,53 @@ The INA219 uses I2C bus 1 at address `0x40`.
 On the verified hardware, the battery route is switched by two relay modules
 connected to the same GPIO22 control line. They move together so the battery is
 switched synchronously between the charger path and the load path.
+
+## Installation
+
+The current tested install target is Raspberry Pi Zero 2 W running Debian 13 /
+Raspberry Pi OS Trixie, 32-bit `armv7l`.
+
+Copy the Debian package to the node:
+
+```bash
+scp dist/ups-pi-node_0.2.1-4_all.deb admin@10.42.0.1:~/
+```
+
+Install with `apt` so dependencies are resolved automatically:
+
+```bash
+ssh admin@10.42.0.1
+sudo apt update
+sudo apt install ./ups-pi-node_0.2.1-4_all.deb
+```
+
+If you use `dpkg` directly, finish dependency setup with `apt`:
+
+```bash
+sudo dpkg -i ./ups-pi-node_0.2.1-4_all.deb
+sudo apt -f install
+```
+
+Check services after installation:
+
+```bash
+dpkg -s ups-pi-node | grep -E '^(Status|Version|Architecture)'
+sudo systemctl status --no-pager ups-pi-node-helper ups-pi-node
+```
+
+The package enables the needed I2C/SPI boot config entries. Reboot once if this
+is the first install or if `/dev/i2c-1` / `/dev/spidev0.0` did not exist before:
+
+```bash
+sudo reboot
+```
+
+Open the web UI from the node address. In fallback hotspot mode the default
+network is `Ups-Node`, password `12345678`, and the portal is available at:
+
+```text
+http://10.42.0.1/
+```
 
 ## Runtime Layout
 
