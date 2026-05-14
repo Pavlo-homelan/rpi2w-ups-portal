@@ -20,9 +20,9 @@ The project is designed for a Raspberry Pi based power node: the web app stays l
 
 Real screenshots from the verified Raspberry Pi Zero 2 W node:
 
-| Login | UPS dashboard | Wi-Fi setup | System settings |
-| --- | --- | --- | --- |
-| <img src="assets/screenshots/login-mobile.jpeg" width="180" alt="Login screen"> | <img src="assets/screenshots/dashboard-mobile.jpeg" width="180" alt="UPS dashboard"> | <img src="assets/screenshots/wifi-mobile.jpeg" width="180" alt="Wi-Fi setup"> | <img src="assets/screenshots/system-mobile.jpeg" width="180" alt="System settings"> |
+| Login | UPS charging | UPS discharging | Wi-Fi setup | System settings |
+| --- | --- | --- | --- | --- |
+| <img src="assets/screenshots/login-mobile.jpeg" width="160" alt="Login screen"> | <img src="assets/screenshots/dashboard-mobile.jpeg" width="160" alt="UPS dashboard charging"> | <img src="assets/screenshots/dashboard-discharge-mobile.jpeg" width="160" alt="UPS dashboard discharging"> | <img src="assets/screenshots/wifi-mobile.jpeg" width="160" alt="Wi-Fi setup"> | <img src="assets/screenshots/system-mobile.jpeg" width="160" alt="System settings"> |
 
 ## Features
 
